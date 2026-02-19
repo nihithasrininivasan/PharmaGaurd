@@ -1,32 +1,69 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import axios from 'axios'
 import RiskBadge from './RiskBadge'
 import ConfidenceMeter from './ConfidenceMeter'
 
 const SEVERITY_COLORS = {
-  low:      { color: '#8C7B58', bg: 'rgba(140,123,88,0.15)',  label: 'LOW' },
+  low: { color: '#8C7B58', bg: 'rgba(140,123,88,0.15)', label: 'LOW' },
   moderate: { color: '#DAA99A', bg: 'rgba(218,169,154,0.15)', label: 'MODERATE' },
-  high:     { color: '#8D3437', bg: 'rgba(141,52,55,0.15)',   label: 'HIGH' },
-  critical: { color: '#C75C5F', bg: 'rgba(199,92,95,0.2)',    label: 'CRITICAL' },
+  high: { color: '#8D3437', bg: 'rgba(141,52,55,0.15)', label: 'HIGH' },
+  critical: { color: '#C75C5F', bg: 'rgba(199,92,95,0.2)', label: 'CRITICAL' },
 }
 
 const HEATMAP_STYLES = [
+<<<<<<< HEAD:src/components/ResultCard.jsx
   { bg: 'transparent',           border: 'var(--border)', label: 'NONE',     dotAnim: 'none',                    cardClass: '' },
   { bg: 'rgba(253,230,138,0.1)', border: '#fbbf24',       label: 'LOW',      dotAnim: 'none',                    cardClass: '' },
   { bg: 'rgba(251,146,60,0.15)', border: '#f97316',       label: 'MODERATE', dotAnim: 'none',                    cardClass: '' },
   { bg: 'rgba(141,52,55,0.2)',   border: '#8D3437',       label: 'HIGH',     dotAnim: 'pulse-dot 1.5s infinite', cardClass: 'heatmap-high' },
   { bg: 'rgba(199,92,95,0.3)',   border: '#C75C5F',       label: 'CRITICAL', dotAnim: 'pulse-dot 0.8s infinite', cardClass: 'heatmap-critical' },
+=======
+  { bg: 'transparent', border: 'var(--border)', label: 'NONE' },
+  { bg: 'rgba(140,123,88,0.08)', border: '#8C7B58', label: 'LOW' },
+  { bg: 'rgba(218,169,154,0.15)', border: '#DAA99A', label: 'MODERATE' },
+  { bg: 'rgba(141,52,55,0.2)', border: '#8D3437', label: 'HIGH' },
+  { bg: 'rgba(199,92,95,0.3)', border: '#C75C5F', label: 'CRITICAL' },
+>>>>>>> 81cc893b3c0228bd1612e6a1c6c52576b8c27717:frontend/src/components/ResultCard.jsx
 ]
 
-export default function ResultCard({ data }) {
+export default function ResultCard({ data, jobId }) {
   const [showExplain, setShowExplain] = useState(false)
+  const [explanation, setExplanation] = useState(null)
   const severity = data.risk_assessment?.severity?.toLowerCase() || 'low'
   const sevStyle = SEVERITY_COLORS[severity] || SEVERITY_COLORS.low
 
   const intensity = data.quality_metrics?.extra_metadata?.heatmap_intensity ?? 0
+<<<<<<< HEAD:src/components/ResultCard.jsx
+=======
+  console.log('intensity:', intensity, 'data:', data.quality_metrics)
+>>>>>>> 81cc893b3c0228bd1612e6a1c6c52576b8c27717:frontend/src/components/ResultCard.jsx
   const heatmap = HEATMAP_STYLES[intensity] || HEATMAP_STYLES[0]
 
-  const rawSummary = data.llm_generated_explanation?.summary ||
-    'AI-generated explanation will appear here once the model processes your genetic profile.'
+  // Poll for explanation when jobId is present
+  useEffect(() => {
+    if (!jobId) return
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await axios.get(
+          `http://localhost:8000/api/v1/explanation/${jobId}`
+        )
+        if (res.data.summary) {
+          setExplanation(res.data.summary)
+          clearInterval(interval)
+        }
+      } catch (err) {
+        // Silently retry
+      }
+    }, 1500)
+
+    return () => clearInterval(interval)
+  }, [jobId])
+
+  // Use polled explanation if available, otherwise use initial data
+  const rawSummary = explanation ||
+    (data.llm_generated_explanation?.summary?.replace(/\s*job_id:.*$/, '') ||
+      'AI-generated explanation will appear here once the model processes your genetic profile.')
 
   return (
     <div

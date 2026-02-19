@@ -1,6 +1,7 @@
 import axios from 'axios'
 
-const BASE_URL = 'http://192.168.68.131:8000'
+const BASE_URL = 'http://localhost:8000'
+
 
 const MOCK_RESPONSE = {
   patient_id: 'PATIENT_001',
@@ -39,7 +40,7 @@ const USE_MOCK = true
 export async function analyzeVCF(vcfFile, drugs) {
   if (USE_MOCK) {
     await new Promise((r) => setTimeout(r, 2200))
-    return { ...MOCK_RESPONSE, drug: drugs }
+    return { data: { ...MOCK_RESPONSE, drug: drugs }, jobId: null }
   }
 
   const formData = new FormData()
@@ -50,5 +51,17 @@ export async function analyzeVCF(vcfFile, drugs) {
   const response = await axios.post(`${BASE_URL}/api/v1/analyze`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
-  return response.data
+
+  const data = response.data
+
+  // Extract job_id from placeholder summary if present
+  const jobMatch = data.llm_generated_explanation?.summary?.match(/job_id:(.*)/)
+  const jobId = jobMatch ? jobMatch[1].trim() : null
+
+  return { data, jobId }
+}
+
+export async function fetchExplanation(jobId) {
+  const response = await axios.get(`${BASE_URL}/api/v1/explanation/${jobId}`)
+  return response.data.summary
 }
