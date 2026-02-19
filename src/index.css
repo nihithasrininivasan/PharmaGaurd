@@ -1,0 +1,163 @@
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+:root {
+  /* DARK BASE */
+  --bg: #141210;
+  --bg2: #1C1916;
+  --card: #221F1B;
+  --card2: #1A1714;
+
+  /* TEXT */
+  --text: #F5EFEA;
+  --text-dim: #B7AFA7;
+
+  /* BORDERS */
+  --border: #2E2A25;
+  --border2: #3A342E;
+
+  /* YOUR COLOR SCHEME */
+  --accent: #DAA99A;   /* pastel pink */
+       /* Burnt Umber */
+  --accent-soft: #DAA99A;   /* Pastel Pink */
+  --success: #8C7B58;       /* Moss Green */
+
+  /* IMPORTANT: map old variables to new colors */
+  --cyan: #8D3437;          /* was bright blue → now burnt umber */
+  --green: #8C7B58;         /* moss green */
+  --red: #C75C5F;           /* muted red */
+  --cyan-dim: #B07C7D;
+
+  --black-chocolate: #1D190F;
+
+  --mono: monospace;
+  --sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+
+
+
+body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
+button { cursor: pointer; font-family: var(--sans); border: none; outline: none; }
+input { font-family: var(--sans); outline: none; }
+
+.app { min-height: 100vh; background: var(--bg); background-image: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(0,230,118,0.03) 0%, transparent 50%); padding: 40px 16px 80px; }
+.container { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
+
+.header { text-align: center; padding: 20px 0 8px; }
+.header-logo { font-family: var(--mono); font-size: 13px; letter-spacing: 6px; color: var(--cyan); text-transform: uppercase; margin-bottom: 16px; opacity: 0.8; }
+.header h1 { font-family: var(--mono); font-size: 42px; font-weight: 700; color: var(--text); letter-spacing: -1px; line-height: 1; margin-bottom: 10px; }
+.header h1 span { color: var(--cyan); }
+.header p { font-size: 14px; color: var(--text-dim); }
+
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
+
+.upload-zone { border: 1.5px dashed var(--border2); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg2); }
+.upload-zone:hover { border-color: var(--cyan); background: rgba(0,212,255,0.04); }
+.upload-zone.active { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
+.upload-zone.has-file { border-color: var(--green); border-style: solid; background: rgba(0,230,118,0.04); }
+.upload-icon { width: 48px; height: 48px; margin: 0 auto 16px; border: 1.5px solid var(--border2); border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--card2); }
+.upload-icon svg { width: 22px; height: 22px; stroke: var(--cyan); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+.upload-zone p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+.upload-zone .file-name { font-family: var(--mono); font-size: 13px; color: var(--green); font-weight: 700; }
+.upload-zone .sub { font-size: 12px; color: var(--text-dim); margin-top: 4px; }
+.upload-error { font-size: 12px; color: var(--red); margin-top: 8px; }
+
+.section-label { font-size: 11px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 12px; }
+
+.drug-section { display: flex; flex-direction: column; }
+.drug-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
+.drug-chip {
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-family: var(--mono);
+  font-weight: 700;
+
+  background: var(--accent-soft);   /* pastel pink */
+  color: var(--black-chocolate);
+  border: 1.5px solid var(--accent-soft);
+
+  transition: 0.2s ease;
+}
+
+.drug-chip:hover {
+  background: var(--accent);        /* red on hover */
+  color: white;
+  border-color: var(--accent);
+}
+
+
+.drug-chip.selected {
+  background: var(--accent);
+  color: white;
+  border-color: var(--accent);
+}
+
+
+.drug-input { width: 100%; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text); transition: border-color 0.2s; }
+.drug-input::placeholder { color: var(--text-dim); }
+.drug-input:focus { border-color: var(--cyan); }
+
+.error-box { background: rgba(255,23,68,0.08); border: 1px solid rgba(255,23,68,0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--red); }
+
+.analyze-btn { width: 100%; background: var(--cyan); color: var(--bg); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 12px; padding: 16px; transition: all 0.2s; }
+.analyze-btn:hover:not(:disabled) { background: #33ddff; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,0.25); }
+.analyze-btn:disabled { background: var(--border2); color: var(--text-dim); cursor: not-allowed; }
+
+.spinner-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; gap: 16px; }
+.spinner { width: 40px; height: 40px; border: 2.5px solid var(--border2); border-top-color: var(--cyan); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.spinner-wrap p { font-family: var(--mono); font-size: 12px; color: var(--text-dim); letter-spacing: 2px; }
+
+.result-card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; overflow: hidden; animation: fadeUp 0.4s ease; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(16px); } to { opacity: 1; transform: translateY(0); } }
+.result-header { background: var(--card2); border-bottom: 1px solid var(--border); padding: 20px 28px; display: flex; justify-content: space-between; align-items: center; }
+.result-header-left .label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
+.result-header-left .value { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--text); }
+.result-header-right { text-align: right; }
+.result-header-right .label { font-family: var(--mono); font-size: 10px; letter-spacing: 2px; color: var(--text-dim); text-transform: uppercase; margin-bottom: 4px; }
+.result-header-right .drug-name { font-family: var(--mono); font-size: 16px; font-weight: 700; color: var(--cyan); }
+.result-body { padding: 28px; display: flex; flex-direction: column; gap: 20px; }
+
+.risk-row { display: flex; justify-content: space-between; align-items: center; }
+.risk-label-wrap .micro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 8px; }
+.risk-badge { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 100px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; border: 1.5px solid; }
+.risk-badge.Safe { color: #00e676; border-color: #00e676; background: rgba(0,230,118,0.1); }
+.risk-badge.Adjust { color: #ffd600; border-color: #ffd600; background: rgba(255,214,0,0.1); }
+.risk-badge.Toxic { color: #ff1744; border-color: #ff1744; background: rgba(255,23,68,0.1); }
+.risk-badge.Ineffective { color: #ff6d00; border-color: #ff6d00; background: rgba(255,109,0,0.1); }
+.risk-badge.Unknown { color: #8892a4; border-color: #8892a4; background: rgba(136,146,164,0.1); }
+.confidence-wrap { text-align: right; }
+.confidence-wrap .micro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 4px; }
+.confidence-wrap .score { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); }
+
+.gene-grid { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 20px; }
+.gene-grid .micro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 16px; }
+.gene-cols { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; text-align: center; }
+.gene-col .col-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 6px; }
+.gene-col .col-value { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--cyan); }
+
+.rec-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 18px; }
+.rec-box .rec-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--cyan-dim); font-family: var(--mono); margin-bottom: 8px; }
+.rec-box p { font-size: 14px; color: var(--text); line-height: 1.6; }
+
+.explain-toggle { background: none; border: none; font-family: var(--mono); font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--cyan); padding: 0; transition: opacity 0.2s; }
+.explain-toggle:hover { opacity: 0.7; }
+.explain-box { background: var(--bg2); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-top: 12px; font-size: 14px; color: var(--text-dim); line-height: 1.7; animation: fadeUp 0.2s ease; }
+
+.disclaimer { font-size: 11px; color: var(--text-dim); border-top: 1px solid var(--border); padding-top: 16px; line-height: 1.5; font-style: italic; }
+
+.action-btns { display: flex; gap: 12px; }
+.btn-copy { flex: 1; background: var(--card2); border: 1.5px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 10px; padding: 12px; transition: all 0.2s; }
+.btn-copy:hover { border-color: var(--text-dim); }
+.btn-download { flex: 1; background: rgba(0,212,255,0.1); border: 1.5px solid var(--cyan); color: var(--cyan); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 10px; padding: 12px; transition: all 0.2s; }
+.analyze-btn:hover:not(:disabled) {
+  background: var(--accent-soft) !important;
+  color: var(--black-chocolate) !important;
+}
+
+
