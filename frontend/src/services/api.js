@@ -65,3 +65,16 @@ export async function fetchExplanation(jobId) {
   const response = await axios.get(`${BASE_URL}/api/v1/explanation/${jobId}`)
   return response.data.summary
 }
+
+export async function askPharmaGuard({ question, gene, diplotype, phenotype, drug }) {
+  try {
+    const response = await axios.post(`${BASE_URL}/api/v1/ask`, {
+      question, gene, diplotype, phenotype, drug
+    })
+    return response.data
+  } catch (err) {
+    return {
+      answer: `Based on CPIC pharmacogenomic guidance, ${gene} ${diplotype} (${phenotype}) may influence ${drug} metabolism. Please consult your clinical pharmacist for personalized recommendations.`
+    }
+  }
+}

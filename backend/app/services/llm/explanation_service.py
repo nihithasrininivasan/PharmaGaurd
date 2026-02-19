@@ -1,5 +1,6 @@
 import logging
 import re
+import time
 from app.services.llm.ollama_client import OllamaClient
 from app.schemas.internal_contracts import RiskEngineOutput
 
@@ -96,61 +97,98 @@ def apply_doctor_view_tags(text: str, risk_data: RiskEngineOutput, drug: str) ->
         
     return tagged_text
 
+
+# ANTI-HALLUCINATION: Known CPIC gene-drug pairs
+def is_supported_gene_drug(gene: str, drug: str) -> bool:
+    """Checks if gene-drug pair has strong CPIC evidence."""
+    supported_pairs = {
+        "CYP2D6": ["CODEINE", "TRAMADOL", "OXYCODONE", "HYDROCODONE"],
+        "CYP2C19": ["CLOPIDOGREL", "VORICONAZOLE", "ESCITALOPRAM"],
+        "CYP2C9": ["WARFARIN", "PHENYTOIN"],
+        "VKORC1": ["WARFARIN"],
+        "CYP3A5": ["TACROLIMUS"],
+        "DPYD": ["FLUOROURACIL", "CAPECITABINE"],
+        "TPMT": ["AZATHIOPRINE", "MERCAPTOPURINE"],
+        "SLCO1B1": ["SIMVASTATIN"],
+        "HLA-B": ["ABACAVIR", "CARBAMAZEPINE"],
+    }
+    return drug.upper() in supported_pairs.get(gene.upper(), [])
+
+
+def build_clinical_context(risk_data: RiskEngineOutput, drug: str) -> str:
+    """Builds a grounding context block from verified patient data."""
+    variants_str = ", ".join(
+        [v.get('id', 'unknown') for v in (risk_data.detected_variants or [])]
+    ) if risk_data.detected_variants else "None"
+
+    return f"""PRIMARY_GENE: {risk_data.gene}
+DIPLOTYPE: {risk_data.diplotype}
+PHENOTYPE: {risk_data.phenotype}
+DRUG: {drug}
+DETECTED_VARIANTS: {variants_str}
+RECOMMENDATION: {risk_data.recommendation}"""
+
 async def generate_explanation(risk_data: RiskEngineOutput, drug: str) -> str:
     """
     Generates a clinical explanation using LLM based on risk data with strict guardrails.
     """
     # TASK 2: CACHE LOOKUP
     cache_key = f"{risk_data.gene}:{risk_data.diplotype}:{drug}".lower()
+    llm_start_time = time.time()
     
     if cache_key in ULTRA_LIGHTNING_CACHE:
         # TASK 5: SAFE CACHE LOGGING
         logger.info("Using Ultra Lightning cached explanation for %s", cache_key)
+        llm_total_time = time.time() - llm_start_time
+        logger.info(f"🧠 LLM generation time: {llm_total_time:.2f} seconds (cache hit)")
         # Even cached explanations get safety check just in case rules changed
         return ULTRA_LIGHTNING_CACHE[cache_key]
 
     logger.info("Generating clinical explanation for %s", risk_data.gene)
     
-    # 1. Prepare Data
+    # 1. Build clinical context (source of truth)
+    clinical_context = build_clinical_context(risk_data, drug)
     variants_str = ", ".join([v.get('id', 'unknown') for v in (risk_data.detected_variants or [])]) if risk_data.detected_variants else "None"
     
-    # 2. Construct Structured Prompt
-    # TASK 1: ADD SAFETY SYSTEM PROMPT
-    prompt = f"""
-SYSTEM:
-You are a clinical decision-support assistant.
-Use cautious, non-prescriptive language.
-Do NOT provide medical advice.
-Use phrases such as: 'may influence', 'is associated with', 'based on CPIC guidance'.
+    # 2. Gene-drug validation
+    evidence_note = ""
+    if not is_supported_gene_drug(risk_data.gene, drug):
+        evidence_note = "\nClinical note: The relationship between this gene and drug may be indirect or low-evidence. State this uncertainty explicitly."
+    
+    # 3. Construct grounded prompt
+    prompt = f"""SYSTEM:
+You are a pharmacogenomics clinical reasoning assistant.
+
+STRICT RULES:
+- Only explain mechanisms directly supported by PRIMARY_GENE and DRUG below.
+- If the gene-drug relationship is weak or uncertain, explicitly say:
+  'Evidence linking this gene to this drug is limited.'
+- NEVER invent alternative genes not listed in the context.
+- NEVER introduce new variants not present in DETECTED_VARIANTS.
+- NEVER contradict phenotype meaning:
+    RM/URM → faster metabolism
+    PM/IM → slower metabolism  
+    NM → normal metabolism
+- Prefer conservative CPIC-style language.
+- Use phrases: 'may influence', 'is associated with', 'based on CPIC guidance'.
+- Do NOT provide direct medical advice.{evidence_note}
 
 Respond in EXACTLY 3 sentences. Maximum 80 words. No extra text.
-Only use the information provided below.
-Do NOT invent new genes, variants, or recommendations.
+Only use the clinical context below as your SOLE medical reference.
+Do NOT invent new genes, variants, pathways, or recommendations.
 If information is missing, respond with: 'Insufficient genomic evidence for explanation.'
 
-USER:
-Patient pharmacogenomic data:
+CLINICAL CONTEXT (SOURCE OF TRUTH):
+{clinical_context}
 
-Gene: {risk_data.gene}
-Diplotype: {risk_data.diplotype}
-Phenotype: {risk_data.phenotype}
-Variants: {variants_str}
-
-Drug: {drug}
-Risk Label: {risk_data.risk_label}
-Severity: {risk_data.severity}
-CPIC Recommendation:
-{risk_data.recommendation}
-
-Task:
-Write EXACTLY 3 sentences.
-Maximum 80 words.
+TASK:
+Write EXACTLY 3 sentences. Maximum 80 words.
 
 Requirements:
-1. Mention the gene and diplotype explicitly.
-2. Explain the biological mechanism of drug metabolism.
-3. Justify the CPIC recommendation.
-4. Do NOT introduce any new clinical facts not listed.
+1. Mention PRIMARY_GENE and DIPLOTYPE explicitly.
+2. Explain the biological mechanism of drug metabolism for this specific gene.
+3. Justify the recommendation using only the CPIC recommendation above.
+4. Do NOT introduce any clinical facts not listed in the context.
 5. Tone: professional clinical language.
     """
 
@@ -190,6 +228,9 @@ Requirements:
 
         # TASK 3: STORE IN CACHE
         ULTRA_LIGHTNING_CACHE[cache_key] = explanation
+        
+        llm_total_time = time.time() - llm_start_time
+        logger.info(f"🧠 LLM generation time: {llm_total_time:.2f} seconds")
         
         return explanation
 

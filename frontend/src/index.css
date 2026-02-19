@@ -164,3 +164,31 @@ variant { color: #DAA99A; font-weight: 600; }
 drug { color: #8C7B58; font-weight: 600; }
 diplotype { color: #7ca4d4; font-weight: 600; }
 cpic { color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }
+
+/* — AskPharmaGuard Animations — */
+
+@keyframes slideIn {
+  from {
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.animate-slideIn {
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+}

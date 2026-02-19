@@ -1,6 +1,7 @@
 import logging
 import asyncio
 import uuid
+import time
 from datetime import datetime, timezone
 
 from fastapi import UploadFile
@@ -78,6 +79,7 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
         PharmaGuardResponse object.
     """
     logger.info(f"Starting analysis pipeline for patient {patient_id}, drug {drug}")
+    start_time = time.time()
     
     # 1. Parse VCF
     logger.info("Parsing started")
@@ -186,5 +188,8 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
             }
         )
     )
+    
+    total_time = time.time() - start_time
+    logger.info(f"⚡ Pipeline execution time: {total_time:.2f} seconds")
     
     return response

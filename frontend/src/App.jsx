@@ -3,6 +3,7 @@ import UploadZone from './components/UploadZone'
 import DrugInput from './components/DrugInput'
 import LoadingSpinner from './components/LoadingSpinner'
 import ResultCard from './components/ResultCard'
+import AskPharmaGuard from './components/AskPharmaGuard'
 import { analyzeVCF } from './services/api'
 
 const LOADING_STEPS = [
@@ -73,6 +74,7 @@ export default function App() {
 
         {loading && <LoadingSpinner message={LOADING_STEPS[loadingStep]} />}
         {result && <ResultCard data={result} jobId={jobId} />}
+        <AskPharmaGuard data={result} />
 
       </div>
     </div>
