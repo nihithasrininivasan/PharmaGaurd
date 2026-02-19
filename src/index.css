@@ -5,30 +5,24 @@
 }
 
 :root {
-  /* DARK BASE */
   --bg: #141210;
   --bg2: #1C1916;
   --card: #221F1B;
   --card2: #1A1714;
 
-  /* TEXT */
   --text: #F5EFEA;
   --text-dim: #B7AFA7;
 
-  /* BORDERS */
   --border: #2E2A25;
   --border2: #3A342E;
 
-  /* YOUR COLOR SCHEME */
-  --accent: #DAA99A;   /* pastel pink */
-       /* Burnt Umber */
-  --accent-soft: #DAA99A;   /* Pastel Pink */
-  --success: #8C7B58;       /* Moss Green */
+  --accent: #DAA99A;
+  --accent-soft: #DAA99A;
+  --success: #8C7B58;
 
-  /* IMPORTANT: map old variables to new colors */
-  --cyan: #8D3437;          /* was bright blue → now burnt umber */
-  --green: #8C7B58;         /* moss green */
-  --red: #C75C5F;           /* muted red */
+  --cyan: #8D3437;
+  --green: #8C7B58;
+  --red: #C75C5F;
   --cyan-dim: #B07C7D;
 
   --black-chocolate: #1D190F;
@@ -37,14 +31,11 @@
   --sans: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-
-
-
 body { background: var(--bg); color: var(--text); font-family: var(--sans); min-height: 100vh; }
 button { cursor: pointer; font-family: var(--sans); border: none; outline: none; }
 input { font-family: var(--sans); outline: none; }
 
-.app { min-height: 100vh; background: var(--bg); background-image: radial-gradient(ellipse at 20% 20%, rgba(0,212,255,0.05) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(0,230,118,0.03) 0%, transparent 50%); padding: 40px 16px 80px; }
+.app { min-height: 100vh; background: var(--bg); background-image: radial-gradient(ellipse at 20% 20%, rgba(141,52,55,0.08) 0%, transparent 50%), radial-gradient(ellipse at 80% 80%, rgba(140,123,88,0.06) 0%, transparent 50%); padding: 40px 16px 80px; }
 .container { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; }
 
 .header { text-align: center; padding: 20px 0 8px; }
@@ -56,9 +47,9 @@ input { font-family: var(--sans); outline: none; }
 .card { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 28px; display: flex; flex-direction: column; gap: 24px; }
 
 .upload-zone { border: 1.5px dashed var(--border2); border-radius: 12px; padding: 40px 24px; text-align: center; cursor: pointer; transition: all 0.2s; background: var(--bg2); }
-.upload-zone:hover { border-color: var(--cyan); background: rgba(0,212,255,0.04); }
-.upload-zone.active { border-color: var(--cyan); background: rgba(0,212,255,0.08); }
-.upload-zone.has-file { border-color: var(--green); border-style: solid; background: rgba(0,230,118,0.04); }
+.upload-zone:hover { border-color: var(--cyan); background: rgba(141,52,55,0.08); }
+.upload-zone.active { border-color: var(--cyan); background: rgba(141,52,55,0.12); }
+.upload-zone.has-file { border-color: var(--green); border-style: solid; background: rgba(140,123,88,0.1); }
 .upload-icon { width: 48px; height: 48px; margin: 0 auto 16px; border: 1.5px solid var(--border2); border-radius: 12px; display: flex; align-items: center; justify-content: center; background: var(--card2); }
 .upload-icon svg { width: 22px; height: 22px; stroke: var(--cyan); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
 .upload-zone p { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
@@ -70,33 +61,9 @@ input { font-family: var(--sans); outline: none; }
 
 .drug-section { display: flex; flex-direction: column; }
 .drug-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 12px; }
-.drug-chip {
-  padding: 6px 14px;
-  border-radius: 100px;
-  font-size: 11px;
-  font-family: var(--mono);
-  font-weight: 700;
-
-  background: var(--accent-soft);   /* pastel pink */
-  color: var(--black-chocolate);
-  border: 1.5px solid var(--accent-soft);
-
-  transition: 0.2s ease;
-}
-
-.drug-chip:hover {
-  background: var(--accent);        /* red on hover */
-  color: white;
-  border-color: var(--accent);
-}
-
-
-.drug-chip.selected {
-  background: var(--accent);
-  color: white;
-  border-color: var(--accent);
-}
-
+.drug-chip { padding: 6px 14px; border-radius: 100px; font-size: 11px; font-family: var(--mono); font-weight: 700; background: var(--accent-soft); color: var(--black-chocolate); border: 1.5px solid var(--accent-soft); transition: 0.2s ease; }
+.drug-chip:hover { background: var(--cyan); color: white; border-color: var(--cyan); }
+.drug-chip.selected { background: var(--cyan); color: white; border-color: var(--cyan); }
 
 .drug-input { width: 100%; background: var(--bg2); border: 1.5px solid var(--border); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--text); transition: border-color 0.2s; }
 .drug-input::placeholder { color: var(--text-dim); }
@@ -104,8 +71,8 @@ input { font-family: var(--sans); outline: none; }
 
 .error-box { background: rgba(255,23,68,0.08); border: 1px solid rgba(255,23,68,0.3); border-radius: 10px; padding: 12px 16px; font-size: 13px; color: var(--red); }
 
-.analyze-btn { width: 100%; background: var(--cyan); color: var(--bg); font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 12px; padding: 16px; transition: all 0.2s; }
-.analyze-btn:hover:not(:disabled) { background: #33ddff; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(0,212,255,0.25); }
+.analyze-btn { width: 100%; background: var(--cyan); color: white; font-family: var(--mono); font-size: 13px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; border-radius: 12px; padding: 16px; transition: all 0.2s; }
+.analyze-btn:hover:not(:disabled) { background: var(--accent-soft) !important; color: var(--black-chocolate) !important; transform: translateY(-1px); box-shadow: 0 8px 24px rgba(141,52,55,0.3); }
 .analyze-btn:disabled { background: var(--border2); color: var(--text-dim); cursor: not-allowed; }
 
 .spinner-wrap { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 48px; gap: 16px; }
@@ -126,11 +93,12 @@ input { font-family: var(--sans); outline: none; }
 .risk-row { display: flex; justify-content: space-between; align-items: center; }
 .risk-label-wrap .micro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 8px; }
 .risk-badge { display: inline-flex; align-items: center; padding: 6px 16px; border-radius: 100px; font-family: var(--mono); font-size: 12px; font-weight: 700; letter-spacing: 1px; border: 1.5px solid; }
-.risk-badge.Safe { color: #00e676; border-color: #00e676; background: rgba(0,230,118,0.1); }
-.risk-badge.Adjust { color: #ffd600; border-color: #ffd600; background: rgba(255,214,0,0.1); }
-.risk-badge.Toxic { color: #ff1744; border-color: #ff1744; background: rgba(255,23,68,0.1); }
-.risk-badge.Ineffective { color: #ff6d00; border-color: #ff6d00; background: rgba(255,109,0,0.1); }
+.risk-badge.Safe { color: #8C7B58; border-color: #8C7B58; background: rgba(140,123,88,0.15); }
+.risk-badge.Adjust { color: #DAA99A; border-color: #DAA99A; background: rgba(218,169,154,0.15); }
+.risk-badge.Toxic { color: #C75C5F; border-color: #C75C5F; background: rgba(199,92,95,0.15); }
+.risk-badge.Ineffective { color: #B07C7D; border-color: #B07C7D; background: rgba(176,124,125,0.15); }
 .risk-badge.Unknown { color: #8892a4; border-color: #8892a4; background: rgba(136,146,164,0.1); }
+
 .confidence-wrap { text-align: right; }
 .confidence-wrap .micro { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 4px; }
 .confidence-wrap .score { font-family: var(--mono); font-size: 28px; font-weight: 700; color: var(--text); }
@@ -141,7 +109,7 @@ input { font-family: var(--sans); outline: none; }
 .gene-col .col-label { font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-dim); font-family: var(--mono); margin-bottom: 6px; }
 .gene-col .col-value { font-family: var(--mono); font-size: 15px; font-weight: 700; color: var(--cyan); }
 
-.rec-box { background: rgba(0,212,255,0.05); border: 1px solid rgba(0,212,255,0.2); border-radius: 12px; padding: 18px; }
+.rec-box { background: rgba(141,52,55,0.05); border: 1px solid rgba(141,52,55,0.2); border-radius: 12px; padding: 18px; }
 .rec-box .rec-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--cyan-dim); font-family: var(--mono); margin-bottom: 8px; }
 .rec-box p { font-size: 14px; color: var(--text); line-height: 1.6; }
 
@@ -153,14 +121,38 @@ input { font-family: var(--sans); outline: none; }
 
 .action-btns { display: flex; gap: 12px; }
 .btn-copy { flex: 1; background: var(--card2); border: 1.5px solid var(--border2); color: var(--text); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 10px; padding: 12px; transition: all 0.2s; }
-.btn-copy:hover { border-color: var(--text-dim); }
-.btn-download { flex: 1; background: rgba(0,212,255,0.1); border: 1.5px solid var(--cyan); color: var(--cyan); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 10px; padding: 12px; transition: all 0.2s; }
-.analyze-btn:hover:not(:disabled) {
-  background: var(--accent-soft) !important;
-  color: var(--black-chocolate) !important;
-}
+.btn-copy:hover { border-color: var(--accent); color: var(--accent); }
+.btn-download { flex: 1; background: rgba(141,52,55,0.1); border: 1.5px solid var(--cyan); color: var(--cyan); font-family: var(--mono); font-size: 11px; font-weight: 700; letter-spacing: 1.5px; text-transform: uppercase; border-radius: 10px; padding: 12px; transition: all 0.2s; }
+.btn-download:hover { background: var(--cyan); color: white; }
+
 gene { color: #b07cd4; font-weight: 600; }
 variant { color: #DAA99A; font-weight: 600; }
 drug { color: #8C7B58; font-weight: 600; }
 diplotype { color: #7ca4d4; font-weight: 600; }
 cpic { color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }
+
+@keyframes pulse-dot {
+  0%   { opacity: 1; transform: scale(1); }
+  50%  { opacity: 0.3; transform: scale(1.8); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.heatmap-high {
+  animation: heatmap-glow-high 1.5s ease-in-out infinite;
+}
+
+.heatmap-critical {
+  animation: heatmap-glow-critical 0.8s ease-in-out infinite;
+}
+
+@keyframes heatmap-glow-high {
+  0%   { box-shadow: 0 0 0 2px #8D3437; }
+  50%  { box-shadow: 0 0 20px 6px rgba(141,52,55,0.6); }
+  100% { box-shadow: 0 0 0 2px #8D3437; }
+}
+
+@keyframes heatmap-glow-critical {
+  0%   { box-shadow: 0 0 0 2px #C75C5F; }
+  50%  { box-shadow: 0 0 28px 8px rgba(199,92,95,0.7); }
+  100% { box-shadow: 0 0 0 2px #C75C5F; }
+}

@@ -34,7 +34,7 @@ const MOCK_RESPONSE = {
   },
 }
 
-const USE_MOCK = false
+const USE_MOCK = true
 
 export async function analyzeVCF(vcfFile, drugs) {
   if (USE_MOCK) {
