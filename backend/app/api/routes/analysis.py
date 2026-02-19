@@ -73,46 +73,37 @@ class AskRequest(BaseModel):
 async def ask_pharmaguard(req: AskRequest):
     """Clinical AI chatbot — calls LLM directly (no cache) with clinical grounding."""
 
-    # Build clinical context (source of truth)
-    clinical_context = f"""PRIMARY_GENE: {req.gene}
-DIPLOTYPE: {req.diplotype}
-PHENOTYPE: {req.phenotype}
-DRUG: {req.drug}"""
-
-    # Gene-drug evidence check
-    evidence_note = ""
+    # Gene-drug guardrail
+    gene_note = ""
     if req.gene and req.drug and not is_supported_gene_drug(req.gene, req.drug):
-        evidence_note = "\nClinical note: The relationship between this gene and drug may be indirect or low-evidence. State this uncertainty explicitly."
+        gene_note = "\nNOTE: Gene is not primary metabolism pathway for this drug."
 
     prompt = f"""SYSTEM:
-You are a pharmacogenomics clinical reasoning assistant.
+You are a pharmacogenomics clinical assistant.
+Follow CPIC guidance strictly.
 
-STRICT RULES:
-- Only explain mechanisms directly supported by PRIMARY_GENE and DRUG below.
-- If the gene-drug relationship is weak or uncertain, explicitly say:
-  'Evidence linking this gene to this drug is limited.'
-- NEVER invent alternative genes not listed in the context.
-- NEVER introduce new variants not in the context.
-- NEVER contradict phenotype meaning:
-    RM/URM → faster metabolism
-    PM/IM → slower metabolism
-    NM → normal metabolism
-- Prefer conservative CPIC-style language.
-- Use phrases: 'may influence', 'is associated with', 'based on CPIC guidance'.
-- Do NOT provide direct medical advice.
-- Keep your answer under 3 sentences, maximum 80 words.{evidence_note}
+Rules:
+- Only use provided context.
+- Do NOT invent biology.
+- If gene is not primary for drug, say so clearly.
+- Maximum 2 sentences.
+- Maximum 45 words.
+- Clinician tone only.{gene_note}
 
-CLINICAL CONTEXT (SOURCE OF TRUTH):
-{clinical_context}
+Gene={req.gene}
+Diplotype={req.diplotype}
+Phenotype={req.phenotype}
+Drug={req.drug}
 
-USER QUESTION:
-{req.question}
+Question: {req.question}
+
+Provide concise CPIC-grounded clinical interpretation.
 
 ANSWER:"""
 
     try:
         client = OllamaClient()
-        answer = await client.generate_text(prompt)
+        answer = await client.generate_chat_text(prompt)
 
         if not answer:
             answer = "I'm unable to generate a response right now. Please consult CPIC guidelines or your clinical pharmacist."

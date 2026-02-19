@@ -146,76 +146,59 @@ async def generate_explanation(risk_data: RiskEngineOutput, drug: str) -> str:
 
     logger.info("Generating clinical explanation for %s", risk_data.gene)
     
-    # 1. Build clinical context (source of truth)
-    clinical_context = build_clinical_context(risk_data, drug)
+    # 1. Turbo micro-context (5 fields only)
     variants_str = ", ".join([v.get('id', 'unknown') for v in (risk_data.detected_variants or [])]) if risk_data.detected_variants else "None"
     
-    # 2. Gene-drug validation
-    evidence_note = ""
+    # 2. Gene-drug guardrail (Part 4)
+    gene_note = ""
     if not is_supported_gene_drug(risk_data.gene, drug):
-        evidence_note = "\nClinical note: The relationship between this gene and drug may be indirect or low-evidence. State this uncertainty explicitly."
+        gene_note = "\nNOTE: Gene is not primary metabolism pathway for this drug."
     
-    # 3. Construct grounded prompt
+    # 3. Ultra-compact turbo prompt
     prompt = f"""SYSTEM:
-You are a pharmacogenomics clinical reasoning assistant.
+You are a pharmacogenomics clinical assistant.
+Follow CPIC guidance strictly.
 
-STRICT RULES:
-- Only explain mechanisms directly supported by PRIMARY_GENE and DRUG below.
-- If the gene-drug relationship is weak or uncertain, explicitly say:
-  'Evidence linking this gene to this drug is limited.'
-- NEVER invent alternative genes not listed in the context.
-- NEVER introduce new variants not present in DETECTED_VARIANTS.
-- NEVER contradict phenotype meaning:
-    RM/URM → faster metabolism
-    PM/IM → slower metabolism  
-    NM → normal metabolism
-- Prefer conservative CPIC-style language.
-- Use phrases: 'may influence', 'is associated with', 'based on CPIC guidance'.
-- Do NOT provide direct medical advice.{evidence_note}
+Rules:
+- Only use provided context.
+- Do NOT invent biology.
+- If gene is not primary for drug, say so clearly.
+- Maximum 2 sentences.
+- Maximum 45 words.
+- Clinician tone only.{gene_note}
 
-Respond in EXACTLY 3 sentences. Maximum 80 words. No extra text.
-Only use the clinical context below as your SOLE medical reference.
-Do NOT invent new genes, variants, pathways, or recommendations.
-If information is missing, respond with: 'Insufficient genomic evidence for explanation.'
+Gene={risk_data.gene}
+Diplotype={risk_data.diplotype}
+Phenotype={risk_data.phenotype}
+Drug={drug}
+Risk={risk_data.risk_label}
 
-CLINICAL CONTEXT (SOURCE OF TRUTH):
-{clinical_context}
+Provide concise CPIC-grounded clinical interpretation.
 
-TASK:
-Write EXACTLY 3 sentences. Maximum 80 words.
-
-Requirements:
-1. Mention PRIMARY_GENE and DIPLOTYPE explicitly.
-2. Explain the biological mechanism of drug metabolism for this specific gene.
-3. Justify the recommendation using only the CPIC recommendation above.
-4. Do NOT introduce any clinical facts not listed in the context.
-5. Tone: professional clinical language.
-    """
+ANSWER:"""
 
     client = OllamaClient()
     
     try:
-        # 3. Call LLM
+        # Call LLM
         explanation = await client.generate_text(prompt)
         
-        # 4. Fallback if None
+        # Fallback if None
         if explanation is None:
             logger.warning("LLM fallback triggered: No response from Ollama")
             return "Clinical explanation unavailable. CPIC recommendation applied."
 
         explanation = explanation.strip()
 
-        # 5. Hallucination Guardrails
-        # Check if gene is mentioned (basic relevance check)
+        # Hallucination Guardrails
         if risk_data.gene not in explanation:
             logger.warning("LLM fallback triggered: Gene missing in explanation")
             return "Clinical explanation unavailable. CPIC recommendation applied."
 
-        # Truncate to 3 sentences max
-        # Split by ., !, or ? followed by space or end of string
+        # Truncate to 2 sentences max (TURBO)
         sentences = re.split(r'(?<=[.!?])\s+', explanation)
-        if len(sentences) > 3:
-            explanation = " ".join(sentences[:3])
+        if len(sentences) > 2:
+            explanation = " ".join(sentences[:2])
 
         # TASK 3: APPLY SAFETY MODE
         explanation = apply_clinical_safety(explanation)
