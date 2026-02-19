@@ -1,0 +1,7 @@
+pytest
+httpx
+pydantic
+fastapi
+uvicorn
+python-multipart
+backoff
