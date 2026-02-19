@@ -1,13 +1,15 @@
 # Python
 __pycache__/
-*.pyc
+*.py[cod]
 *.pyo
 *.pyd
+*.pyc
 .Python
 env/
 venv/
 .env
-.venv
+.venv/
+ENV/
 build/
 develop-eggs/
 dist/
@@ -23,19 +25,50 @@ wheels/
 *.egg-info/
 .installed.cfg
 *.egg
+*.spec
 
 # Testing
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
+.mypy_cache/
+.dmypy.json
+.pytype/
+.ruff_cache/
+stress_test_results.txt
+test_results.txt
+test_out.txt
+run_output.txt
+out.txt
+*.log
 
 # Editor/IDE
 .DS_Store
 .idea/
 .vscode/
+*.suo
+*.user
+*.swp
+*.swo
+*~
 
 # Project Specific
 # Generated cache file
 backend/data/cpic_cache.json
 # Temporary inspection scripts (if any remain)
 backend/inspect_*.py
+
+# ── Large / binary data ────────────────────────────────────────────────────────
+*.vcf.gz
+*.bam
+*.bai
+*.cram
+
+# Test VCF data folder (generated locally, not project source)
+test_data/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
