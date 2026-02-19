@@ -8,6 +8,20 @@ logger = logging.getLogger(__name__)
 # TASK 1: ULTRA LIGHTNING CACHE
 ULTRA_LIGHTNING_CACHE = {}
 
+# Global store for async explanation results (polled by frontend)
+EXPLANATION_STORE = {}
+
+
+async def generate_explanation_background(job_id: str, risk_data: RiskEngineOutput, drug: str):
+    """Runs explanation generation in the background and stores the result."""
+    try:
+        summary = await generate_explanation(risk_data, drug)
+        EXPLANATION_STORE[job_id] = summary
+        logger.info("Background explanation stored for job %s", job_id)
+    except Exception as e:
+        logger.error("Background explanation failed for job %s: %s", job_id, str(e))
+        EXPLANATION_STORE[job_id] = "Clinical explanation unavailable. CPIC recommendation applied."
+
 # TASK 2: ADD SAFETY POST-PROCESSOR FUNCTION
 def apply_clinical_safety(text: str) -> str:
     """

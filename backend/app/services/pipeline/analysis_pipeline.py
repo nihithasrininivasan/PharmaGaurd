@@ -1,5 +1,6 @@
 import logging
 import asyncio
+import uuid
 from datetime import datetime, timezone
 
 from fastapi import UploadFile
@@ -13,7 +14,7 @@ from app.schemas.pharma_schema import (
     ClinicalRecommendation,
     QualityMetrics
 )
-from app.services.llm.explanation_service import generate_explanation, ULTRA_LIGHTNING_CACHE
+from app.services.llm.explanation_service import generate_explanation_background, ULTRA_LIGHTNING_CACHE, generate_explanation
 
 # Assumed imports based on prompt requirements "Assume these already exist"
 # In a real scenario, these would be actual imports from existing modules
@@ -92,19 +93,20 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
         logger.error(f"Risk computation failed: {str(e)}")
         raise RuntimeError(f"Risk computation failed: {str(e)}")
 
-    # 3. LLM Explanation (Ultra Lightning Flow)
-    logger.info("LLM explanation generated")
+    # 3. LLM Explanation (Non-blocking with job tracking)
+    logger.info("LLM explanation generation started")
     
-    # Check cache directly to determine if we can respond instantly
+    # Check cache first for instant response
     cache_key = f"{risk_data.gene}:{risk_data.diplotype}:{drug}".lower()
     
     if cache_key in ULTRA_LIGHTNING_CACHE:
-        # Cache Hit: Retrieve instantly (async call returns immediately)
-        explanation_text = await generate_explanation(risk_data, drug)
+        explanation_text = ULTRA_LIGHTNING_CACHE[cache_key]
+        job_id = None
     else:
-        # Cache Miss: Trigger background generation and return placeholder
-        asyncio.create_task(generate_explanation(risk_data, drug))
-        explanation_text = "Generating clinical explanation..."
+        # Fire-and-forget background generation with job tracking
+        job_id = str(uuid.uuid4())
+        asyncio.create_task(generate_explanation_background(job_id, risk_data, drug))
+        explanation_text = f"Generating clinical explanation... job_id:{job_id}"
 
     # 4. Assemble Response
     logger.info("Response assembled")
@@ -148,6 +150,8 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
     )
     
     current_time = datetime.now(timezone.utc).isoformat()
+    
+
     
     response = PharmaGuardResponse(
         patient_id=patient_id,

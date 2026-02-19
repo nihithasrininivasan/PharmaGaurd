@@ -37,11 +37,11 @@ class OllamaClient:
             "model": self.model,
             "prompt": prompt,
             "stream": False,
-            "keep_alive": "5m",  # Optimization: Keep model warm
+            "keep_alive": "10m",  # Optimization: Keep model warm longer between requests
             "options": {
-                "num_predict": 120, # Optimization: Limit output tokens
-                "temperature": 0.2, # Optimization: Deterministic
-                "top_p": 0.9        # Optimization: Focus on probable tokens
+                "num_predict": 70,   # Optimization: 3 sentences need ~70 tokens max
+                "temperature": 0.15, # Optimization: More deterministic = faster sampling
+                "top_p": 0.9         # Optimization: Focus on probable tokens
             }
         }
         

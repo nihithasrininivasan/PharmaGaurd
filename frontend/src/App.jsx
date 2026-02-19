@@ -17,6 +17,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
   const [result, setResult] = useState(null)
+  const [jobId, setJobId] = useState(null)
   const [error, setError] = useState(null)
 
   const handleAnalyze = async () => {
@@ -32,8 +33,9 @@ export default function App() {
     const stepTimer2 = setTimeout(() => setLoadingStep(2), 1800)
 
     try {
-      const data = await analyzeVCF(vcfFile, drug)
+      const { data, jobId: jid } = await analyzeVCF(vcfFile, drug)
       setResult(data)
+      setJobId(jid)
     } catch (err) {
       setError('Analysis failed. Please check the file and try again.')
     } finally {
@@ -70,7 +72,7 @@ export default function App() {
         </div>
 
         {loading && <LoadingSpinner message={LOADING_STEPS[loadingStep]} />}
-        {result && <ResultCard data={result} />}
+        {result && <ResultCard data={result} jobId={jobId} />}
 
       </div>
     </div>

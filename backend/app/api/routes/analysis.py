@@ -3,6 +3,7 @@ import logging
 
 from app.schemas.pharma_schema import PharmaGuardResponse
 from app.services.pipeline.analysis_pipeline import run_analysis_pipeline
+from app.services.llm.explanation_service import EXPLANATION_STORE
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -48,3 +49,11 @@ async def analyze_pharmacogenomics(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An error occurred during the analysis pipeline."
         )
+
+
+@router.get("/explanation/{job_id}")
+async def get_explanation(job_id: str):
+    """Poll for async LLM explanation result by job_id."""
+    if job_id in EXPLANATION_STORE:
+        return {"summary": EXPLANATION_STORE[job_id]}
+    return {"summary": None}

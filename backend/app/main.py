@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.routes import analysis
 from app.core import logging  # Initialize logging
+from app.services.llm.ollama_client import OllamaClient
 
 app = FastAPI(
     title="PharmaGuard Backend",
@@ -20,6 +21,16 @@ app.add_middleware(
 
 # Include routers
 app.include_router(analysis.router, prefix="/api/v1", tags=["Analysis"])
+
+@app.on_event("startup")
+async def warmup_llm():
+    """Preload the LLM model into memory on server startup."""
+    try:
+        client = OllamaClient()
+        await client.generate_text("Warmup request. Respond with OK.")
+        print("🔥 Ollama model warmed up.")
+    except Exception:
+        print("⚠️ Ollama warmup failed. First request may be slow.")
 
 @app.get("/health")
 async def health_check():
