@@ -1,0 +1,70 @@
+# ── Python ────────────────────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.pyc
+*.egg
+*.egg-info/
+dist/
+build/
+*.spec
+.eggs/
+
+# ── Virtual environments ───────────────────────────────────────────────────────
+venv/
+.venv/
+env/
+.env/
+ENV/
+
+# ── Environment / secrets ──────────────────────────────────────────────────────
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.*
+
+# ── IDE / Editor ──────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.suo
+*.user
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ── Test / run artefacts ───────────────────────────────────────────────────────
+stress_test_results.txt
+test_results.txt
+test_out.txt
+run_output.txt
+out.txt
+*.log
+
+# ── Large / binary data ────────────────────────────────────────────────────────
+*.vcf.gz
+*.bam
+*.bai
+*.cram
+
+# Test VCF data folder (generated locally, not project source)
+test_data/
+
+# ── Coverage / type-checking ───────────────────────────────────────────────────
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.dmypy.json
+.pytype/
+.ruff_cache/
+.pytest_cache/
+
+# ── OS ────────────────────────────────────────────────────────────────────────
+Thumbs.db
+ehthumbs.db
+Desktop.ini
