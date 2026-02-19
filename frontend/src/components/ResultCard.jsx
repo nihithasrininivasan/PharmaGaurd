@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import axios from 'axios'
 import RiskBadge from './RiskBadge'
+import ConfidenceMeter from './ConfidenceMeter'
 
 const SEVERITY_COLORS = {
   low: { color: '#8C7B58', bg: 'rgba(140,123,88,0.15)', label: 'LOW' },
@@ -10,11 +11,19 @@ const SEVERITY_COLORS = {
 }
 
 const HEATMAP_STYLES = [
+<<<<<<< HEAD:src/components/ResultCard.jsx
+  { bg: 'transparent',           border: 'var(--border)', label: 'NONE',     dotAnim: 'none',                    cardClass: '' },
+  { bg: 'rgba(253,230,138,0.1)', border: '#fbbf24',       label: 'LOW',      dotAnim: 'none',                    cardClass: '' },
+  { bg: 'rgba(251,146,60,0.15)', border: '#f97316',       label: 'MODERATE', dotAnim: 'none',                    cardClass: '' },
+  { bg: 'rgba(141,52,55,0.2)',   border: '#8D3437',       label: 'HIGH',     dotAnim: 'pulse-dot 1.5s infinite', cardClass: 'heatmap-high' },
+  { bg: 'rgba(199,92,95,0.3)',   border: '#C75C5F',       label: 'CRITICAL', dotAnim: 'pulse-dot 0.8s infinite', cardClass: 'heatmap-critical' },
+=======
   { bg: 'transparent', border: 'var(--border)', label: 'NONE' },
   { bg: 'rgba(140,123,88,0.08)', border: '#8C7B58', label: 'LOW' },
   { bg: 'rgba(218,169,154,0.15)', border: '#DAA99A', label: 'MODERATE' },
   { bg: 'rgba(141,52,55,0.2)', border: '#8D3437', label: 'HIGH' },
   { bg: 'rgba(199,92,95,0.3)', border: '#C75C5F', label: 'CRITICAL' },
+>>>>>>> 81cc893b3c0228bd1612e6a1c6c52576b8c27717:frontend/src/components/ResultCard.jsx
 ]
 
 export default function ResultCard({ data, jobId }) {
@@ -24,7 +33,10 @@ export default function ResultCard({ data, jobId }) {
   const sevStyle = SEVERITY_COLORS[severity] || SEVERITY_COLORS.low
 
   const intensity = data.quality_metrics?.extra_metadata?.heatmap_intensity ?? 0
+<<<<<<< HEAD:src/components/ResultCard.jsx
+=======
   console.log('intensity:', intensity, 'data:', data.quality_metrics)
+>>>>>>> 81cc893b3c0228bd1612e6a1c6c52576b8c27717:frontend/src/components/ResultCard.jsx
   const heatmap = HEATMAP_STYLES[intensity] || HEATMAP_STYLES[0]
 
   // Poll for explanation when jobId is present
@@ -55,11 +67,10 @@ export default function ResultCard({ data, jobId }) {
 
   return (
     <div
-      className="result-card"
+      className={`result-card ${heatmap.cardClass}`}
       style={{
         background: heatmap.bg,
-        borderColor: heatmap.border,
-        transition: 'background 0.5s ease-in-out, border-color 0.5s ease-in-out',
+        transition: 'background 0.5s ease-in-out',
       }}
     >
       <div className="result-header">
@@ -87,7 +98,7 @@ export default function ResultCard({ data, jobId }) {
           width: 8, height: 8, borderRadius: '50%',
           background: heatmap.border === 'var(--border)' ? 'var(--text-dim)' : heatmap.border,
           flexShrink: 0,
-          transition: 'background 0.5s ease-in-out',
+          animation: heatmap.dotAnim,
         }} />
         <span style={{
           fontSize: 10,
@@ -101,35 +112,35 @@ export default function ResultCard({ data, jobId }) {
       </div>
 
       <div className="result-body">
+
+        {/* Risk + Confidence Meter */}
         <div className="risk-row">
           <div className="risk-label-wrap">
             <div className="micro">Risk Assessment</div>
             <RiskBadge riskLabel={data.risk_assessment?.risk_label} />
-          </div>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6 }}>
-            <span style={{
-              padding: '4px 12px',
-              borderRadius: 100,
-              fontSize: 10,
-              fontFamily: 'var(--mono)',
-              fontWeight: 700,
-              letterSpacing: 2,
-              color: sevStyle.color,
-              border: `1.5px solid ${sevStyle.color}`,
-              background: sevStyle.bg,
-              transition: 'all 0.5s ease-in-out',
-            }}>
-              {sevStyle.label}
-            </span>
-            <div className="confidence-wrap">
-              <div className="micro">Confidence</div>
-              <div className="score">
-                {Math.round((data.risk_assessment?.confidence_score || 0) * 100)}%
-              </div>
+            <div style={{ marginTop: 8 }}>
+              <span style={{
+                padding: '4px 12px',
+                borderRadius: 100,
+                fontSize: 10,
+                fontFamily: 'var(--mono)',
+                fontWeight: 700,
+                letterSpacing: 2,
+                color: sevStyle.color,
+                border: `1.5px solid ${sevStyle.color}`,
+                background: sevStyle.bg,
+              }}>
+                {sevStyle.label}
+              </span>
             </div>
           </div>
+          <ConfidenceMeter
+            score={data.risk_assessment?.confidence_score}
+            riskLabel={data.risk_assessment?.risk_label}
+          />
         </div>
 
+        {/* Gene Grid */}
         <div className="gene-grid">
           <div className="micro">Pharmacogenomic Profile</div>
           <div className="gene-cols">
@@ -158,11 +169,13 @@ export default function ResultCard({ data, jobId }) {
           )}
         </div>
 
+        {/* Clinical Recommendation */}
         <div className="rec-box">
           <div className="rec-label">Clinical Recommendation</div>
           <p>{data.clinical_recommendation?.action}</p>
         </div>
 
+        {/* AI Explanation */}
         <button className="explain-toggle" onClick={() => setShowExplain(!showExplain)}>
           {showExplain ? '▲ Hide AI Explanation' : '▼ View AI Explanation'}
         </button>
@@ -195,6 +208,7 @@ export default function ResultCard({ data, jobId }) {
           </div>
         )}
 
+        {/* Quality Metrics */}
         {data.quality_metrics && (
           <div style={{
             display: 'flex', alignItems: 'center', gap: 8,
@@ -215,6 +229,7 @@ export default function ResultCard({ data, jobId }) {
           This tool provides AI-assisted pharmacogenomic insights.
           Final prescribing decisions must be made by licensed clinicians.
         </div>
+
       </div>
     </div>
   )
