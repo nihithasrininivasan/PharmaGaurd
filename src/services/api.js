@@ -1,6 +1,6 @@
 import axios from 'axios'
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000'
+const BASE_URL = 'http://192.168.68.131:8000'
 
 const MOCK_RESPONSE = {
   patient_id: 'PATIENT_001',
@@ -34,7 +34,7 @@ const MOCK_RESPONSE = {
   },
 }
 
-const USE_MOCK = true
+const USE_MOCK = false
 
 export async function analyzeVCF(vcfFile, drugs) {
   if (USE_MOCK) {
@@ -43,8 +43,9 @@ export async function analyzeVCF(vcfFile, drugs) {
   }
 
   const formData = new FormData()
-  formData.append('file', vcfFile)
-  formData.append('drugs', drugs)
+  formData.append('drug', drugs)
+  formData.append('vcf', vcfFile)
+  formData.append('patient_id', 'PATIENT_001')
 
   const response = await axios.post(`${BASE_URL}/api/v1/analyze`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
