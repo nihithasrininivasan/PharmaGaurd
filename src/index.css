@@ -159,5 +159,8 @@ input { font-family: var(--sans); outline: none; }
   background: var(--accent-soft) !important;
   color: var(--black-chocolate) !important;
 }
-
-
+gene { color: #b07cd4; font-weight: 600; }
+variant { color: #DAA99A; font-weight: 600; }
+drug { color: #8C7B58; font-weight: 600; }
+diplotype { color: #7ca4d4; font-weight: 600; }
+cpic { color: var(--text-dim); font-weight: 700; letter-spacing: 1px; }

@@ -24,10 +24,13 @@ const MOCK_RESPONSE = {
     cpic_level: 'Strong',
   },
   llm_generated_explanation: {
-    summary: 'This patient carries duplicated CYP2D6*2 alleles, making them an Ultra-Rapid Metabolizer. Codeine is converted to morphine by CYP2D6 and in this genotype the conversion is accelerated, producing toxic morphine blood levels. This causes a high risk of respiratory depression. CPIC strongly recommends avoiding codeine entirely in Ultra-Rapid Metabolizers.',
+    summary: 'This patient carries duplicated <gene>CYP2D6</gene> <diplotype>*2xN</diplotype> alleles, making them an Ultra-Rapid Metabolizer. <drug>Codeine</drug> is converted to morphine by <gene>CYP2D6</gene> and in this genotype the conversion is accelerated, producing toxic morphine blood levels. The variant <variant>rs1080985</variant> is responsible for this effect. <cpic>CPIC</cpic> strongly recommends avoiding <drug>Codeine</drug> entirely in Ultra-Rapid Metabolizers.',
   },
   quality_metrics: {
     vcf_parsing_success: true,
+    extra_metadata: {
+      heatmap_intensity: 3
+    }
   },
 }
 
@@ -43,7 +46,7 @@ export async function analyzeVCF(vcfFile, drugs) {
   formData.append('file', vcfFile)
   formData.append('drugs', drugs)
 
-  const response = await axios.post(`${BASE_URL}/analyze`, formData, {
+  const response = await axios.post(`${BASE_URL}/api/v1/analyze`, formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   })
   return response.data
