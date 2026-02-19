@@ -1,8 +1,8 @@
-export default function LoadingSpinner() {
+export default function LoadingSpinner({ message = 'Analyzing genetic data...' }) {
   return (
     <div className="spinner-wrap">
       <div className="spinner"></div>
-      <p>Analyzing genetic data</p>
+      <p>{message}</p>
     </div>
   )
 }
