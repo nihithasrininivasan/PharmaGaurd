@@ -2,6 +2,7 @@ import logging
 import httpx
 import backoff
 import random
+import os
 from typing import Optional
 
 # Configure structured logging
@@ -10,15 +11,18 @@ logger = logging.getLogger(__name__)
 # Global shared HTTP client — connection reuse across all requests (TURBO: 30s timeout)
 _shared_client = httpx.AsyncClient(timeout=30.0)
 
+# Default Ollama URL — overridden via OLLAMA_BASE_URL env var for deployment
+_DEFAULT_OLLAMA_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
+
 
 class OllamaClient:
     """
-    Client for interacting with the local Ollama instance running Llama3.
+    Client for interacting with Ollama instance running Llama3.
     Uses a global shared httpx.AsyncClient for connection reuse.
     TURBO MODE: Optimized for 2-3 second clinical responses.
     """
-    def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "llama3"):
-        self.base_url = base_url
+    def __init__(self, base_url: str = None, model: str = "llama3.1:8b"):
+        self.base_url = base_url or _DEFAULT_OLLAMA_URL
         self.model = model
         self.generate_endpoint = f"{self.base_url}/api/generate"
 

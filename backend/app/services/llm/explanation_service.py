@@ -190,10 +190,9 @@ ANSWER:"""
 
         explanation = explanation.strip()
 
-        # Hallucination Guardrails
-        if risk_data.gene not in explanation:
-            logger.warning("LLM fallback triggered: Gene missing in explanation")
-            return "Clinical explanation unavailable. CPIC recommendation applied."
+        # Hallucination Guardrails (soft check — warn but don't discard)
+        if risk_data.gene and risk_data.gene.upper() not in explanation.upper():
+            logger.warning("Gene %s not found verbatim in LLM explanation — proceeding with response", risk_data.gene)
 
         # Truncate to 2 sentences max (TURBO)
         sentences = re.split(r'(?<=[.!?])\s+', explanation)

@@ -16,29 +16,7 @@ from app.schemas.pharma_schema import (
     QualityMetrics
 )
 from app.services.llm.explanation_service import generate_explanation_background, ULTRA_LIGHTNING_CACHE, generate_explanation
-
-# Assumed imports based on prompt requirements "Assume these already exist"
-# In a real scenario, these would be actual imports from existing modules
-try:
-    from app.services.vcf.parser import parse_vcf
-except ImportError:
-    # Dummy implementation for code generation purpose if files don't exist
-    def parse_vcf(file): return {"dummy": "data"}
-
-try:
-    from app.services.pharmacogenomics.risk_engine import compute_risk
-except ImportError:
-    # Dummy implementation for code generation purpose if files don't exist
-    def compute_risk(parsed_data, drug):
-        return RiskEngineOutput(
-            gene="CYP2C19",
-            diplotype="*1/*17",
-            phenotype="Rapid Metabolizer",
-            risk_label="Moderate Risk",
-            severity="Warning",
-            recommendation="Consider alternative drug or dose reduction.",
-            detected_variants=[{"id": "rs12248560", "genotype": "T/C"}]
-        )
+from app.services.vcf.pharmaguard_adapter import analyze_vcf_for_drugs
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +34,7 @@ def compute_heatmap_intensity(severity: str = "low", phenotype: str = "NM") -> i
     intensity = mapping.get((severity or "low").lower(), 1)
 
     # Phenotype boost for extreme metabolizer statuses
-    if (phenotype or "NM") in ["PM", "URM"]:
+    if (phenotype or "NM") in ["PM", "URM", "Poor Metabolizer", "Ultrarapid Metabolizer"]:
         intensity = min(intensity + 1, 4)
 
     return intensity
@@ -65,131 +43,144 @@ def compute_heatmap_intensity(severity: str = "low", phenotype: str = "NM") -> i
 async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile) -> PharmaGuardResponse:
     """
     Orchestrates the full pharmacogenomic analysis pipeline:
-    1. Parse VCF
-    2. Compute Risk
+    1. Parse VCF via real adapter
+    2. Extract risk from real risk engine
     3. Generate LLM Explanation
     4. Assemble Response
-    
-    Args:
-        patient_id: The ID of the patient.
-        drug: The drug name.
-        vcf_file: The uploaded VCF file.
-        
-    Returns:
-        PharmaGuardResponse object.
     """
     logger.info(f"Starting analysis pipeline for patient {patient_id}, drug {drug}")
     start_time = time.time()
-    
-    # 1. Parse VCF
-    logger.info("Parsing started")
-    # Note: parse_vcf is synchronous in this assumed interface, or we could wrap it
-    # Assuming standard file handling for the hackathon context
-    parsed_data = parse_vcf(vcf_file.file)
 
-    # 2. Risk Computation
-    logger.info("Risk computed")
-    try:
-        risk_data: RiskEngineOutput = compute_risk(parsed_data, drug)
-    except Exception as e:
-        logger.error(f"Risk computation failed: {str(e)}")
-        raise RuntimeError(f"Risk computation failed: {str(e)}")
+    # 1. Parse VCF + compute risk via the real adapter
+    logger.info("Parsing VCF and computing risk...")
+    vcf_bytes = await vcf_file.read()
+    results = analyze_vcf_for_drugs(vcf_bytes, [drug.upper()])
 
-    # 3. LLM Explanation (Non-blocking with job tracking)
+    if not results:
+        raise ValueError(f"No pharmacogenomic data found for drug '{drug}' in the uploaded VCF.")
+
+    result = results[0]  # Single drug result
+
+    # Extract fields from the real adapter output
+    ra = result.get("risk_assessment", {})
+    profile = result.get("pharmacogenomic_profile", {})
+    rec = result.get("clinical_recommendation", {})
+
+    gene = profile.get("primary_gene", "Unknown")
+    diplotype = profile.get("diplotype", "Unknown")
+    phenotype = profile.get("phenotype", "Unknown")
+    risk_label = ra.get("risk_label", "Unknown")
+    severity = ra.get("severity", "moderate")
+    confidence_score = ra.get("confidence_score", 0.0)
+    recommendation_text = rec.get("text", "Consult clinical pharmacist.")
+    raw_variants = profile.get("detected_variants", [])
+
+    # Filter out Hom-Ref (0/0) variants — patient doesn't carry these
+    # Also transform to frontend-expected format: { rsid, effect }
+    detected_variants = []
+    for v in raw_variants:
+        if v.get("zygosity") == "Hom-Ref" or v.get("gt") == "0/0":
+            continue
+        info = v.get("info", {})
+        effect_parts = []
+        if info.get("FUNC"):
+            effect_parts.append(info["FUNC"].replace("_", " ").title())
+        if info.get("CLNSIG"):
+            effect_parts.append(info["CLNSIG"].replace("_", " "))
+        if v.get("star"):
+            effect_parts.append(f"Star allele *{v['star'].lstrip('*')}")
+        effect = " — ".join(effect_parts) if effect_parts else f"{v.get('gene', '')} variant"
+        detected_variants.append({
+            "rsid": v.get("rsid", "unknown"),
+            "effect": effect,
+        })
+
+    # Build RiskEngineOutput for LLM explanation
+    risk_data = RiskEngineOutput(
+        gene=gene,
+        diplotype=diplotype,
+        phenotype=phenotype,
+        risk_label=risk_label,
+        severity=severity,
+        recommendation=recommendation_text,
+        detected_variants=[{"id": v["rsid"], "effect": v["effect"]} for v in detected_variants],
+    )
+
+    # 2. LLM Explanation (Non-blocking with job tracking)
     logger.info("LLM explanation generation started")
-    
-    # Check cache first for instant response
-    cache_key = f"{risk_data.gene}:{risk_data.diplotype}:{drug}".lower()
-    
+
+    cache_key = f"{gene}:{diplotype}:{drug}".lower()
+
     if cache_key in ULTRA_LIGHTNING_CACHE:
         explanation_text = ULTRA_LIGHTNING_CACHE[cache_key]
         job_id = None
     else:
-        # Fire-and-forget background generation with job tracking
         job_id = str(uuid.uuid4())
         asyncio.create_task(generate_explanation_background(job_id, risk_data, drug))
         explanation_text = f"Generating clinical explanation... job_id:{job_id}"
 
-    # 4. Assemble Response
-    logger.info("Response assembled")
-    
-    # --- Normalize phenotype to required abbreviations ---
-
+    # 3. Normalize phenotype for frontend display
     phenotype_map = {
         "Poor Metabolizer": "PM",
         "Intermediate Metabolizer": "IM",
         "Normal Metabolizer": "NM",
         "Rapid Metabolizer": "RM",
         "Ultra Rapid Metabolizer": "URM",
+        "Ultrarapid Metabolizer": "URM",
+        "Normal Function": "NF",
+        "Increased Function": "IF",
+        "Decreased Function": "DF",
     }
+    normalized_phenotype = phenotype_map.get(phenotype, phenotype)
 
-    normalized_phenotype = phenotype_map.get(
-        risk_data.phenotype,
-        risk_data.phenotype
-    )
-
-    # --- Normalize risk labels ---
-
-    allowed_labels = ["Safe", "Adjust Dosage", "Toxic", "Ineffective", "Unknown"]
-
-    risk_label = (
-        risk_data.risk_label
-        if risk_data.risk_label in allowed_labels
-        else "Adjust Dosage"
-    )
-
-    # --- Normalize severity values ---
-
-    severity_map = {
-        "Warning": "moderate",
-        "Moderate Risk": "moderate",
-        "High Risk": "high",
+    # 4. Normalize risk label for frontend consistency
+    label_map = {
+        "Standard dosing recommended": "Safe",
+        "Avoid": "Toxic",
+        "Use Alternative": "Ineffective",
+        "Adjust Dosage": "Adjust Dosage",
+        "Toxic": "Toxic",
+        "Ineffective": "Ineffective",
+        "Safe": "Safe",
     }
+    normalized_label = label_map.get(risk_label, "Adjust Dosage")
 
-    severity = severity_map.get(
-        risk_data.severity,
-        risk_data.severity
-    )
-    
     current_time = datetime.now(timezone.utc).isoformat()
-    
 
-    
     response = PharmaGuardResponse(
         patient_id=patient_id,
         drug=drug.upper(),
         timestamp=current_time,
         risk_assessment=RiskAssessment(
-            risk_label=risk_label,
-            confidence_score=0.95,
-            severity=severity
+            risk_label=normalized_label,
+            confidence_score=confidence_score,
+            severity=severity,
         ),
         pharmacogenomic_profile=PharmacogenomicProfile(
-            primary_gene=risk_data.gene,
-            diplotype=risk_data.diplotype,
+            primary_gene=gene,
+            diplotype=diplotype,
             phenotype=normalized_phenotype,
-            detected_variants=risk_data.detected_variants or []
+            detected_variants=detected_variants,
         ),
         clinical_recommendation=ClinicalRecommendation(
-            text=risk_data.recommendation,
-            source="CPIC Guidelines"
+            action=recommendation_text,
+            source="CPIC Guidelines",
         ),
         llm_generated_explanation=LLMExplanation(
-            summary=explanation_text
+            summary=explanation_text,
         ),
         quality_metrics=QualityMetrics(
             vcf_parsing_success=True,
             coverage_check="PASS",
             extra_metadata={
                 "heatmap_intensity": compute_heatmap_intensity(
-                    severity,
-                    normalized_phenotype
+                    severity, normalized_phenotype
                 )
-            }
-        )
+            },
+        ),
     )
-    
+
     total_time = time.time() - start_time
     logger.info(f"⚡ Pipeline execution time: {total_time:.2f} seconds")
-    
+
     return response

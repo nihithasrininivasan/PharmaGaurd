@@ -18,7 +18,7 @@ class LLMExplanation(BaseModel):
     
 
 class ClinicalRecommendation(BaseModel):
-    text: str
+    action: str
     source: str = "CPIC Guidelines"
 
 class QualityMetrics(BaseModel):

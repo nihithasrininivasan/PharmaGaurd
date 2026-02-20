@@ -31,13 +31,13 @@ async def startup_event():
     print("Preloading CPIC data...")
     get_cpic_loader()
 
-    # Warmup LLM model
+    # Warmup LLM model (non-blocking — server starts regardless)
     try:
         client = OllamaClient()
         await client.generate_text("Warmup request. Respond with OK.")
         print("🔥 Ollama model warmed up.")
     except Exception:
-        print("⚠️ Ollama warmup failed. First request may be slow.")
+        print("⚠️ Ollama not reachable — LLM explanations will use fallback. Server starting anyway.")
 
 @app.get("/health")
 async def health_check():

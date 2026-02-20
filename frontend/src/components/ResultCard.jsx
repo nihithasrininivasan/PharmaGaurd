@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import axios from 'axios'
+import { fetchExplanation } from '../services/api'
 import RiskBadge from './RiskBadge'
 import ConfidenceMeter from './ConfidenceMeter'
 
@@ -45,11 +45,9 @@ export default function ResultCard({ data, jobId }) {
 
     const interval = setInterval(async () => {
       try {
-        const res = await axios.get(
-          `http://localhost:8000/api/v1/explanation/${jobId}`
-        )
-        if (res.data.summary) {
-          setExplanation(res.data.summary)
+        const summary = await fetchExplanation(jobId)
+        if (summary) {
+          setExplanation(summary)
           clearInterval(interval)
         }
       } catch (err) {
@@ -167,12 +165,6 @@ export default function ResultCard({ data, jobId }) {
               ))}
             </div>
           )}
-        </div>
-
-        {/* Clinical Recommendation */}
-        <div className="rec-box">
-          <div className="rec-label">Clinical Recommendation</div>
-          <p>{data.clinical_recommendation?.action}</p>
         </div>
 
         {/* AI Explanation */}
