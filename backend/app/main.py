@@ -4,7 +4,7 @@ from app.api.router import api_router
 from app.api.routes import analysis
 from app.core import logging  # Initialize logging
 from app.services.pharmacogenomics.cpic_loader import get_cpic_loader
-from app.services.llm.ollama_client import OllamaClient
+from app.services.llm.groq_client import GroqClient
 
 app = FastAPI(
     title="PharmaGuard API",
@@ -31,13 +31,16 @@ async def startup_event():
     print("Preloading CPIC data...")
     get_cpic_loader()
 
-    # Warmup LLM model (non-blocking — server starts regardless)
+    # Verify Groq connectivity (non-blocking)
     try:
-        client = OllamaClient()
-        await client.generate_text("Warmup request. Respond with OK.")
-        print("🔥 Ollama model warmed up.")
-    except Exception:
-        print("⚠️ Ollama not reachable — LLM explanations will use fallback. Server starting anyway.")
+        client = GroqClient()
+        result = await client.generate_text("Respond with OK.")
+        if result:
+            print("🔥 Groq LLM connected successfully.")
+        else:
+            print("⚠️ Groq returned empty response — check GROQ_API_KEY.")
+    except Exception as e:
+        print(f"⚠️ Groq not reachable ({e}). LLM explanations will use fallback. Server starting anyway.")
 
 @app.get("/health")
 async def health_check():

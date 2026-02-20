@@ -4,7 +4,7 @@ services:
     runtime: docker
     rootDir: backend
     envVars:
-      - key: OLLAMA_BASE_URL
+      - key: GROQ_API_KEY
         sync: false
       - key: PYTHON_VERSION
         value: "3.11"

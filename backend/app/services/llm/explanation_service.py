@@ -1,7 +1,7 @@
 import logging
 import re
 import time
-from app.services.llm.ollama_client import OllamaClient
+from app.services.llm.groq_client import GroqClient
 from app.schemas.internal_contracts import RiskEngineOutput
 
 logger = logging.getLogger(__name__)
@@ -177,7 +177,7 @@ Provide concise CPIC-grounded clinical interpretation.
 
 ANSWER:"""
 
-    client = OllamaClient()
+    client = GroqClient()
     
     try:
         # Call LLM

@@ -5,7 +5,7 @@ import logging
 from app.schemas.pharma_schema import PharmaGuardResponse
 from app.services.pipeline.analysis_pipeline import run_analysis_pipeline
 from app.services.llm.explanation_service import EXPLANATION_STORE, is_supported_gene_drug
-from app.services.llm.ollama_client import OllamaClient
+from app.services.llm.groq_client import GroqClient
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -102,7 +102,7 @@ Provide concise CPIC-grounded clinical interpretation.
 ANSWER:"""
 
     try:
-        client = OllamaClient()
+        client = GroqClient()
         answer = await client.generate_chat_text(prompt)
 
         if not answer:
