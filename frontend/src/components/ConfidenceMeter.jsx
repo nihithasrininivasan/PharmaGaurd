@@ -1,5 +1,14 @@
+import { useState, useEffect } from 'react'
+
 export default function ConfidenceMeter({ score, riskLabel }) {
-  const percentage = Math.round((score || 0) * 100)
+  const [percentage, setPercentage] = useState(0)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setPercentage(Math.round((score || 0) * 100))
+    }, 50)
+    return () => clearTimeout(timer)
+  }, [score])
 
   const getColor = () => {
     if (riskLabel === 'Safe') return '#8C7B58'

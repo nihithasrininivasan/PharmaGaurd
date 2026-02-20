@@ -61,8 +61,8 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
     if drug_upper not in SUPPORTED_DRUGS_TO_GENE:
         supported = ", ".join(sorted(SUPPORTED_DRUGS_TO_GENE.keys()))
         raise ValueError(
-            f"Drug '{drug}' is not supported for pharmacogenomic analysis. "
-            f"Supported drugs: {supported}"
+            f"'{drug.strip()}' is not currently supported for pharmacogenomic analysis. "
+            f"We will support it soon! Currently supported drugs: {supported}"
         )
 
     results = analyze_vcf_for_drugs(vcf_bytes, [drug_upper])
@@ -70,9 +70,9 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
     if not results:
         target_gene = SUPPORTED_DRUGS_TO_GENE[drug_upper]
         raise ValueError(
-            f"The uploaded VCF file does not contain any variants in the {target_gene} gene region, "
-            f"which is required for {drug_upper} pharmacogenomic analysis. "
-            f"Please upload a VCF file that includes {target_gene} variant data."
+            f"The uploaded VCF file is not relevant for {drug_upper} analysis — "
+            f"it does not contain any variants in the {target_gene} gene region. "
+            f"Please upload a VCF file that contains {target_gene} genetic data."
         )
 
     result = results[0]  # Single drug result

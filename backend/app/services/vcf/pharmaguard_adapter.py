@@ -132,6 +132,11 @@ def analyze_vcf_for_drugs(
         # Get raw extracted variants for this gene
         extracted_variants: Sequence[ExtractedVariant] = by_gene.get(primary_gene, [])
 
+        if not extracted_variants:
+            # If no variants are found for the gene, assume the VCF is irrelevant/missing coverage.
+            # Skipping it here ensures the pipeline raises the validation error.
+            continue
+
         # 2. Map to Domain Models — propagate REAL quality data
         domain_variants: List[VariantCall] = []
         rejected_unknown_zyg: List[Dict] = []

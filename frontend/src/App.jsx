@@ -14,19 +14,26 @@ const LOADING_STEPS = [
 
 export default function App() {
   const [vcfFile, setVcfFile] = useState(null)
-  const [drug, setDrug] = useState('')
+  const [selectedDrugs, setSelectedDrugs] = useState([])
   const [loading, setLoading] = useState(false)
   const [loadingStep, setLoadingStep] = useState(0)
-  const [result, setResult] = useState(null)
-  const [jobId, setJobId] = useState(null)
+  const [results, setResults] = useState([])
   const [error, setError] = useState(null)
+
+  const toggleDrug = (drug) => {
+    setSelectedDrugs((prev) =>
+      prev.includes(drug)
+        ? prev.filter((d) => d !== drug)
+        : [...prev, drug]
+    )
+  }
 
   const handleAnalyze = async () => {
     if (!vcfFile) { setError('Please upload a VCF file first.'); return }
-    if (!drug.trim()) { setError('Please select or enter a drug name.'); return }
+    if (selectedDrugs.length === 0) { setError('Please select at least one drug.'); return }
 
     setError(null)
-    setResult(null)
+    setResults([])
     setLoading(true)
     setLoadingStep(0)
 
@@ -34,11 +41,34 @@ export default function App() {
     const stepTimer2 = setTimeout(() => setLoadingStep(2), 1800)
 
     try {
-      const { data, jobId: jid } = await analyzeVCF(vcfFile, drug)
-      setResult(data)
-      setJobId(jid)
+      // Analyze each drug in parallel
+      const promises = selectedDrugs.map(async (drug) => {
+        try {
+          const { data, jobId } = await analyzeVCF(vcfFile, drug)
+          return { data, jobId, drug, error: null }
+        } catch (err) {
+          return {
+            data: null,
+            jobId: null,
+            drug,
+            error: err.response?.data?.detail || `Analysis failed for ${drug}.`,
+          }
+        }
+      })
+
+      const allResults = await Promise.all(promises)
+      const successes = allResults.filter((r) => r.data)
+      const failures = allResults.filter((r) => r.error)
+
+      setResults(successes)
+
+      if (failures.length > 0 && successes.length === 0) {
+        setError(failures.map((f) => f.error).join('\n'))
+      } else if (failures.length > 0) {
+        setError(`Some analyses failed: ${failures.map((f) => f.drug).join(', ')}`)
+      }
     } catch (err) {
-      setError(err.response?.data?.detail || 'Analysis failed. Please check the file and try again.')
+      setError('Analysis failed. Please check the file and try again.')
     } finally {
       clearTimeout(stepTimer1)
       clearTimeout(stepTimer2)
@@ -59,7 +89,7 @@ export default function App() {
 
         <div className="card">
           <UploadZone onFileSelected={setVcfFile} />
-          <DrugInput value={drug} onChange={setDrug} />
+          <DrugInput selectedDrugs={selectedDrugs} onToggle={toggleDrug} />
 
           {error && <div className="error-box">{error}</div>}
 
@@ -68,13 +98,17 @@ export default function App() {
             onClick={handleAnalyze}
             disabled={loading}
           >
-            {loading ? LOADING_STEPS[loadingStep] : 'Analyze Genetic Risk'}
+            {loading
+              ? LOADING_STEPS[loadingStep]
+              : `Analyze Genetic Risk${selectedDrugs.length > 1 ? ` (${selectedDrugs.length} drugs)` : ''}`}
           </button>
         </div>
 
         {loading && <LoadingSpinner message={LOADING_STEPS[loadingStep]} />}
-        {result && <ResultCard data={result} jobId={jobId} />}
-        <AskPharmaGuard data={result} />
+        {results.map((r, i) => (
+          <ResultCard key={r.drug + i} data={r.data} jobId={r.jobId} />
+        ))}
+        {results.length > 0 && <AskPharmaGuard data={results[0].data} />}
 
       </div>
     </div>

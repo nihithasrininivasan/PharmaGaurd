@@ -8,17 +8,26 @@ export default function UploadZone({ onFileSelected }) {
   const onDrop = useCallback((acceptedFiles, rejectedFiles) => {
     setError(null)
     if (rejectedFiles.length > 0) {
-      setError('Invalid file. Please upload a .vcf file under 5MB.')
+      const { errors } = rejectedFiles[0]
+      if (errors.some((e) => e.code === 'file-too-large')) {
+        setError('File is too large. Maximum size is 5MB.')
+      } else {
+        setError('Only .vcf and .vcf.gz files are accepted. Please upload a valid genetic data file.')
+      }
       return
     }
     const file = acceptedFiles[0]
+    if (!file.name.endsWith('.vcf') && !file.name.endsWith('.vcf.gz')) {
+      setError('Only .vcf and .vcf.gz files are accepted. Please upload a valid genetic data file.')
+      return
+    }
     setFileName(file.name)
     onFileSelected(file)
   }, [onFileSelected])
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
-    accept: { 'text/plain': ['.vcf'] },
+    accept: { 'text/plain': ['.vcf'], 'application/gzip': ['.gz'] },
     maxSize: 5 * 1024 * 1024,
     multiple: false,
   })
