@@ -290,4 +290,6 @@ def get_population_frequencies() -> PopulationFrequencyData:
     global _pop_freq_instance
     if _pop_freq_instance is None:
         _pop_freq_instance = PopulationFrequencyData()
-    return _pop_freq_instance
+
+# Alias for backward compatibility with RiskEngine
+PopulationDataLoader = PopulationFrequencyData

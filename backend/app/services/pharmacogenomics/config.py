@@ -122,44 +122,8 @@ class ActivityScoreConfig(BaseModel):
 
     # Gene-specific activity scores (can be extended)
     gene_specific_scores: Dict[str, Dict[str, float]] = Field(
-        default_factory=lambda: {
-            "CYP2D6": {
-                "*1": 1.0,
-                "*2": 1.0,
-                "*3": 0.0,
-                "*4": 0.0,
-                "*5": 0.0,  # Gene deletion
-                "*6": 0.0,
-                "*7": 0.0,
-                "*8": 0.0,
-                "*9": 0.5,
-                "*10": 0.5,
-                "*17": 0.5,
-                "*29": 0.5,
-                "*41": 0.5,
-                # Duplications
-                "*1x2": 2.0,
-                "*2x2": 2.0,
-            },
-            "CYP2C19": {
-                "*1": 1.0,
-                "*2": 0.0,
-                "*3": 0.0,
-                "*17": 1.5,  # Increased function
-            },
-            "CYP2C9": {
-                "*1": 1.0,
-                "*2": 0.5,
-                "*3": 0.0,
-            },
-            "TPMT": {
-                "*1": 1.0,
-                "*2": 0.0,
-                "*3A": 0.0,
-                "*3C": 0.0,
-            }
-        },
-        description="Gene-specific allele activity scores"
+        default_factory=dict,
+        description="Gene-specific allele activity scores (Deprecated: Loaded from CPIC cache)"
     )
 
 
@@ -202,6 +166,32 @@ class PharmacogenomicsConfig(BaseModel):
     verbose_logging: bool = Field(
         default=True,
         description="Enable verbose logging for debugging"
+    )
+
+    # ----- Variant Quality Filtering -----
+    min_variant_quality: float = Field(
+        default=20.0,
+        ge=0.0,
+        description="Minimum QUAL score; variants below this are flagged"
+    )
+
+    min_allele_depth: int = Field(
+        default=10,
+        ge=0,
+        description="Minimum total allele depth (AD sum)"
+    )
+
+    min_allele_depth_ratio: float = Field(
+        default=0.2,
+        ge=0.0,
+        le=1.0,
+        description="Minimum ALT allele depth ratio (AD[1]/sum(AD))"
+    )
+
+    # ----- Genome Build -----
+    expected_genome_build: str = Field(
+        default="GRCh38",
+        description="Expected genome build for variant positions"
     )
 
 

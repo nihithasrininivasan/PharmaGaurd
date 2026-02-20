@@ -41,10 +41,25 @@ class CPICDataLoader:
         backend_dir = Path(__file__).parent.parent.parent.parent
         cache_file = backend_dir / config.cpic_cache_path
 
+        # Check for cache freshness
+        cpic_data_dir = backend_dir / config.cpic_data_dir
+        if cache_file.exists() and cpic_data_dir.exists():
+             cache_mtime = cache_file.stat().st_mtime
+             
+             # Check if any source file is newer than cache
+             needs_refresh = False
+             for source_file in cpic_data_dir.rglob("*.xlsx"):
+                 if source_file.stat().st_mtime > cache_mtime:
+                     print(f"Detected update in {source_file.name}. Refreshing cache...")
+                     needs_refresh = True
+                     break
+             
+             if needs_refresh:
+                 self._run_etl(cpic_data_dir, cache_file)
+
         if not cache_file.exists():
             # Check if auto-ETL is enabled
             if config.auto_run_etl:
-                cpic_data_dir = backend_dir / config.cpic_data_dir
                 if cpic_data_dir.exists():
                     print(f"CPIC cache not found. Running ETL from {cpic_data_dir}...")
                     self._run_etl(cpic_data_dir, cache_file)
@@ -166,10 +181,57 @@ class CPICDataLoader:
             return {}
         return drug_data.get('recommendations', {})
 
-    def get_drug_recommendation_for_phenotype(self, drug: str, phenotype: str) -> Optional[Dict]:
-        """Get specific recommendation for a drug-phenotype combination."""
+    def get_drug_recommendation_for_phenotype(
+        self, drug: str, phenotype: str, activity_score: Optional[float] = None
+    ) -> Optional[Dict]:
+        """
+        Get specific recommendation for a drug-phenotype combination.
+
+        Tries phenotype string match first (most drugs).
+        Falls back to activity score lookup for drugs like codeine that use
+        numeric score keys (e.g., '0.0', '≥3.0') instead of phenotype strings.
+        """
         recommendations = self.get_drug_recommendations(drug)
-        return recommendations.get(phenotype)
+        if not recommendations:
+            return None
+
+        # 1. Direct phenotype string lookup
+        rec = recommendations.get(phenotype)
+        if rec:
+            return rec
+
+        # 2. Activity score-based lookup (for codeine-style recommendations)
+        if activity_score is not None:
+            # Try exact score key first
+            exact_key = str(float(activity_score))
+            rec = recommendations.get(exact_key)
+            if rec:
+                return rec
+
+            # Try threshold keys (≥N) — find the tightest applicable threshold
+            threshold_keys = []
+            for key in recommendations:
+                if key.startswith('≥'):
+                    try:
+                        threshold = float(key[1:])
+                        if activity_score >= threshold:
+                            threshold_keys.append((threshold, key))
+                    except ValueError:
+                        pass
+
+            if threshold_keys:
+                # Use the highest applicable threshold (most specific match)
+                threshold_keys.sort(key=lambda x: x[0], reverse=True)
+                rec = recommendations.get(threshold_keys[0][1])
+                if rec:
+                    return rec
+
+            # 3. CRITICAL SAFEGUARD: Do NOT guess closest numeric key.
+            # If no exact match and no threshold match, return None.
+            # This prevents 2.0 (Normal) falling back to 1.0 (Avoid) if 2.0 key is missing.
+            pass
+
+        return None
 
     def get_supported_drugs(self) -> List[str]:
         """Get list of all supported drug names."""
@@ -182,8 +244,25 @@ class CPICDataLoader:
         return gene in self._genes
 
     def is_drug_supported(self, drug: str) -> bool:
-        """Check if a drug is supported."""
-        return drug.lower() in self._drugs
+        """Check if a drug is supported.
+
+        A drug is considered supported if:
+        1. It exists in the local CPIC alert cache (cpic_cache.json), OR
+        2. PharmGKB has Level 1A or 1B evidence for this drug across any gene.
+
+        Case-insensitive. Aggregates across all genes.
+        """
+        drug_key = drug.strip().lower()
+        # Check 1: CPIC alert files (local cache)
+        if drug_key in self._drugs:
+            return True
+        # Check 2: Delegate to PharmGKB for Level 1A/1B evidence
+        try:
+            from .pharmgkb_loader import get_pharmgkb_loader
+            pharmgkb = get_pharmgkb_loader()
+            return pharmgkb.is_drug_supported(drug_key)
+        except Exception:
+            return False
 
     def find_alleles_for_variant(self, gene: str, variant_key: str) -> List[str]:
         """
@@ -240,25 +319,81 @@ class CPICDataLoader:
 
         return None
 
+    # ===== NEW: Enriched Cache Accessors =====
+
+    def get_rsid_map(self, gene: str) -> Dict[str, int]:
+        """
+        Get rsID → genomic position mapping for a gene.
+        Returns: {"rs4244285": 94781859, ...}
+        """
+        gene_data = self.get_gene_data(gene)
+        if not gene_data:
+            return {}
+        return gene_data.get('rsid_map', {})
+
+    def get_allele_function(self, gene: str, allele: str) -> Optional[str]:
+        """
+        Get the clinical functional status for an allele.
+        Returns: e.g. "Normal function", "No function", "Decreased function"
+        """
+        gene_data = self.get_gene_data(gene)
+        if not gene_data:
+            return None
+        return gene_data.get('allele_functions', {}).get(allele)
+
+    def get_all_allele_functions(self, gene: str) -> Dict[str, str]:
+        """Get all allele → function status mappings for a gene."""
+        gene_data = self.get_gene_data(gene)
+        if not gene_data:
+            return {}
+        return gene_data.get('allele_functions', {})
+
+    def get_frequencies(self, gene: str) -> Dict[str, Dict[str, float]]:
+        """
+        Get population allele frequencies for a gene.
+        Returns: {"European": {"*1": 0.625, ...}, ...}
+        """
+        gene_data = self.get_gene_data(gene)
+        if not gene_data:
+            return {}
+        return gene_data.get('frequencies', {})
+
+    # ===== Activity Scoring =====
+
+    _FUNCTION_TO_SCORE = {
+        "Normal function": 1.0,
+        "Increased function": 1.5,
+        "Decreased function": 0.5,
+        "No function": 0.0,
+        "Uncertain function": None,  # Cannot assign score
+    }
+
     def get_activity_score(self, gene: str, allele: str) -> float:
         """
-        Get activity score for an allele (for activity score-based phenotype determination).
-        Uses configuration-defined scores, with fallback to defaults.
+        Get activity score for an allele.
+        Priority: direct score > function-derived score > default.
         """
-        from .config import get_activity_scores
-
-        activity_config = get_activity_scores()
-
-        # Check gene-specific scores first
-        gene_scores = activity_config.gene_specific_scores.get(gene, {})
-        if allele in gene_scores:
-            return gene_scores[allele]
-
-        # Default: wildtype has activity 1.0, unknown alleles default to 1.0
-        if allele == "*1":
+        gene_data = self.get_gene_data(gene)
+        if not gene_data:
             return 1.0
 
-        return 1.0  # Conservative default for unknown alleles
+        # 1. Direct activity score from cache
+        activity_scores = gene_data.get('activity_scores', {})
+        if allele in activity_scores:
+            return activity_scores[allele]
+
+        # 2. Derive from function status
+        func_status = gene_data.get('allele_functions', {}).get(allele)
+        if func_status:
+            derived = self._FUNCTION_TO_SCORE.get(func_status)
+            if derived is not None:
+                return derived
+
+        # 3. Wildtype default
+        if allele in ("*1", "Reference"):
+            return 1.0
+
+        return 1.0  # Conservative default
 
     def calculate_total_activity_score(self, gene: str, diplotype: str) -> float:
         """Calculate total activity score for a diplotype."""
