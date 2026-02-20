@@ -4,6 +4,10 @@ import backoff
 import random
 import os
 from typing import Optional
+from dotenv import load_dotenv, find_dotenv
+
+# Load .env file (walks up directories to find it)
+load_dotenv(find_dotenv())
 
 logger = logging.getLogger(__name__)
 
