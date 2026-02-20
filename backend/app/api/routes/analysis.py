@@ -35,6 +35,24 @@ async def analyze_pharmacogenomics(
             detail="Invalid file format. Please upload a .vcf or .vcf.gz file."
         )
 
+    # STRICT VALIDATION: Check for valid VCF header
+    # We peek at the first chunk without fully consuming if possible, or read/reset
+    # But since run_analysis_pipeline reads it, we just need to ensure it's valid first.
+    # For UploadFile, we can read, check, and seek(0).
+    header_chunk = await vcf.read(1024)
+    await vcf.seek(0)
+    
+    try:
+        header_str = header_chunk.decode('utf-8', errors='ignore')
+    except:
+        raise HTTPException(status_code=400, detail="File is not a valid text-based VCF.")
+
+    if not header_str.startswith("##fileformat=VCF"):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invalid VCF: File must start with '##fileformat=VCF'. Please upload a verified ISGCR/VCF file."
+        )
+
     try:
         response = await run_analysis_pipeline(patient_id, drug, vcf)
         return response

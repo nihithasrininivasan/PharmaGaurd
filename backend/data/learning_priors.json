@@ -1,0 +1,26 @@
+{
+  "genes": {
+    "CYP2C19": {
+      "variant_weights": {},
+      "diplotype_priors": {
+        "*2/*2": 1.1500000000000001
+      }
+    },
+    "CYP2D6": {
+      "variant_weights": {},
+      "diplotype_priors": {}
+    },
+    "CYP2C9": {
+      "variant_weights": {},
+      "diplotype_priors": {}
+    },
+    "TPMT": {
+      "variant_weights": {},
+      "diplotype_priors": {}
+    }
+  },
+  "metadata": {
+    "last_updated": "2026-02-19T19:29:48.363016",
+    "total_feedback_events": 3
+  }
+}

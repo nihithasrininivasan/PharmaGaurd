@@ -1,7 +1,6 @@
-pytest
-httpx
-pydantic
 fastapi
-uvicorn
+uvicorn[standard]
 python-multipart
+httpx
 backoff
+pydantic

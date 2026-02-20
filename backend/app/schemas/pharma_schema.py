@@ -6,20 +6,30 @@ class RiskAssessment(BaseModel):
     risk_label: str
     confidence_score: float
     severity: str
+    risk_score: Optional[float] = None
+    risk_level: Optional[str] = None
 
 class PharmacogenomicProfile(BaseModel):
     primary_gene: str
     diplotype: str
     phenotype: str
     detected_variants: list = []
+    activity_score: Optional[float] = None
+    allele_scores: Optional[Dict[str, float]] = None
+    notes: Optional[str] = None
 
 class LLMExplanation(BaseModel):
     summary: str
-    
+    supporting_facts: Optional[List[str]] = None
+    mechanism: Optional[str] = None
+    llm_available: Optional[bool] = None
+    llm_model: Optional[str] = None
 
 class ClinicalRecommendation(BaseModel):
     text: str
     source: str = "CPIC Guidelines"
+    implication: Optional[str] = None
+    recommendation_url: Optional[str] = None
 
 class QualityMetrics(BaseModel):
     vcf_parsing_success: bool = True
@@ -29,7 +39,7 @@ class QualityMetrics(BaseModel):
 class PharmaGuardResponse(BaseModel):
     patient_id: str
     drug: str
-    timestamp: str 
+    timestamp: str
     risk_assessment: RiskAssessment
     pharmacogenomic_profile: PharmacogenomicProfile
     clinical_recommendation: ClinicalRecommendation
@@ -39,7 +49,6 @@ class PharmaGuardResponse(BaseModel):
     @validator('timestamp')
     def validate_timestamp(cls, v):
         try:
-            # simple check if it's ISO formatted, though string type is specified
             datetime.fromisoformat(v.replace('Z', '+00:00'))
             return v
         except ValueError:

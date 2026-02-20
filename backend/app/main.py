@@ -28,9 +28,9 @@ async def warmup_llm():
     try:
         client = OllamaClient()
         await client.generate_text("Warmup request. Respond with OK.")
-        print("🔥 Ollama model warmed up.")
+        print("[INFO] Ollama model warmed up.")
     except Exception:
-        print("⚠️ Ollama warmup failed. First request may be slow.")
+        print("[WARN] Ollama warmup failed. First request may be slow.")
 
 @app.get("/health")
 async def health_check():

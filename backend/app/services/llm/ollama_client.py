@@ -1,33 +1,25 @@
 import logging
-import httpx
-import backoff
+import json
+import time
 import random
-from typing import Optional
+import urllib.request
+import urllib.error
+from typing import Optional, Dict, Any
 
 # Configure structured logging
 logger = logging.getLogger(__name__)
 
-# Global shared HTTP client — connection reuse across all requests (TURBO: 30s timeout)
-_shared_client = httpx.AsyncClient(timeout=30.0)
-
-
 class OllamaClient:
     """
     Client for interacting with the local Ollama instance running Llama3.
-    Uses a global shared httpx.AsyncClient for connection reuse.
+    Uses standard library urllib for zero-dependency operation.
     TURBO MODE: Optimized for 2-3 second clinical responses.
     """
     def __init__(self, base_url: str = "http://127.0.0.1:11434", model: str = "llama3"):
-        self.base_url = base_url
+        self.base_url = base_url.rstrip("/")
         self.model = model
         self.generate_endpoint = f"{self.base_url}/api/generate"
 
-    @backoff.on_exception(
-        backoff.expo,
-        (httpx.RequestError, httpx.HTTPStatusError),
-        max_tries=2,
-        giveup=lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code < 500
-    )
     async def generate_text(self, prompt: str) -> Optional[str]:
         """
         Generates deterministic clinical explanations.
@@ -49,29 +41,8 @@ class OllamaClient:
             }
         }
         
-        try:
-            response = await _shared_client.post(self.generate_endpoint, json=payload)
-            response.raise_for_status()
-            
-            data = response.json()
-            generated_text = data.get("response", "")
-            
-            logger.info("Ollama request successful", extra={"response_length": len(generated_text)})
-            return generated_text
-                
-        except (httpx.HTTPStatusError, httpx.RequestError) as e:
-            logger.error(f"Error communicating with Ollama: {str(e)}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error in Ollama client: {str(e)}")
-            return None
+        return self._make_request(payload)
 
-    @backoff.on_exception(
-        backoff.expo,
-        (httpx.RequestError, httpx.HTTPStatusError),
-        max_tries=2,
-        giveup=lambda e: isinstance(e, httpx.HTTPStatusError) and e.response.status_code < 500
-    )
     async def generate_chat_text(self, prompt: str) -> Optional[str]:
         """
         Generates chatbot responses with slight variance.
@@ -94,22 +65,35 @@ class OllamaClient:
             }
         }
 
-        try:
-            response = await _shared_client.post(self.generate_endpoint, json=payload)
-            response.raise_for_status()
+        return self._make_request(payload)
 
-            data = response.json()
-            generated_text = data.get("response", "")
+    def _make_request(self, payload: Dict[str, Any], retries: int = 2) -> Optional[str]:
+        """Helper to make HTTP request with simple retry logic."""
+        data = json.dumps(payload).encode("utf-8")
+        req = urllib.request.Request(
+            self.generate_endpoint,
+            data=data,
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
 
-            logger.info("Chat Ollama request successful", extra={"response_length": len(generated_text)})
-            return generated_text
-
-        except (httpx.HTTPStatusError, httpx.RequestError) as e:
-            logger.error(f"Error communicating with Ollama (chat): {str(e)}")
-            return None
-        except Exception as e:
-            logger.error(f"Unexpected error in Ollama chat client: {str(e)}")
-            return None
-
-
-
+        for attempt in range(retries + 1):
+            try:
+                with urllib.request.urlopen(req, timeout=30) as response:
+                    if response.status == 200:
+                        resp_data = json.loads(response.read().decode("utf-8"))
+                        generated_text = resp_data.get("response", "")
+                        logger.info("Ollama request successful", extra={"response_length": len(generated_text)})
+                        return generated_text
+                    else:
+                        logger.error(f"Ollama returned status {response.status}")
+            except urllib.error.URLError as e:
+                logger.error(f"Error communicating with Ollama: {e}")
+                if attempt < retries:
+                    time.sleep(1 * (attempt + 1))  # Simple backoff
+                else:
+                    return None
+            except Exception as e:
+                logger.error(f"Unexpected error in Ollama client: {e}")
+                return None
+        return None
