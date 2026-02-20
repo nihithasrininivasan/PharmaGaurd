@@ -38,7 +38,7 @@ export default function App() {
       setResult(data)
       setJobId(jid)
     } catch (err) {
-      setError('Analysis failed. Please check the file and try again.')
+      setError(err.response?.data?.detail || 'Analysis failed. Please check the file and try again.')
     } finally {
       clearTimeout(stepTimer1)
       clearTimeout(stepTimer2)

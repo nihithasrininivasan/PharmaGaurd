@@ -54,10 +54,26 @@ async def run_analysis_pipeline(patient_id: str, drug: str, vcf_file: UploadFile
     # 1. Parse VCF + compute risk via the real adapter
     logger.info("Parsing VCF and computing risk...")
     vcf_bytes = await vcf_file.read()
-    results = analyze_vcf_for_drugs(vcf_bytes, [drug.upper()])
+
+    # Validate drug is supported before processing
+    from app.services.vcf.pharmaguard_adapter import SUPPORTED_DRUGS_TO_GENE
+    drug_upper = drug.strip().upper()
+    if drug_upper not in SUPPORTED_DRUGS_TO_GENE:
+        supported = ", ".join(sorted(SUPPORTED_DRUGS_TO_GENE.keys()))
+        raise ValueError(
+            f"Drug '{drug}' is not supported for pharmacogenomic analysis. "
+            f"Supported drugs: {supported}"
+        )
+
+    results = analyze_vcf_for_drugs(vcf_bytes, [drug_upper])
 
     if not results:
-        raise ValueError(f"No pharmacogenomic data found for drug '{drug}' in the uploaded VCF.")
+        target_gene = SUPPORTED_DRUGS_TO_GENE[drug_upper]
+        raise ValueError(
+            f"The uploaded VCF file does not contain any variants in the {target_gene} gene region, "
+            f"which is required for {drug_upper} pharmacogenomic analysis. "
+            f"Please upload a VCF file that includes {target_gene} variant data."
+        )
 
     result = results[0]  # Single drug result
 
