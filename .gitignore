@@ -72,7 +72,6 @@ dist-ssr
 *~
 
 # Project Specific
-backend/data/cpic_cache.json
 backend/inspect_*.py
 
 # Large / binary data
