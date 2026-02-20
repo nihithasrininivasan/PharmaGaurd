@@ -32,7 +32,7 @@ class CPICDataLoader:
             CPICDataLoader._initialized = True
 
     def _load_data(self):
-        """Load CPIC data from cache file."""
+        """Load CPIC data from pre-built cache file."""
         from .config import get_config
 
         config = get_config()
@@ -41,39 +41,11 @@ class CPICDataLoader:
         backend_dir = Path(__file__).parent.parent.parent.parent
         cache_file = backend_dir / config.cpic_cache_path
 
-        # Check for cache freshness
-        cpic_data_dir = backend_dir / config.cpic_data_dir
-        if cache_file.exists() and cpic_data_dir.exists():
-             cache_mtime = cache_file.stat().st_mtime
-             
-             # Check if any source file is newer than cache
-             needs_refresh = False
-             for source_file in cpic_data_dir.rglob("*.xlsx"):
-                 if source_file.stat().st_mtime > cache_mtime:
-                     print(f"Detected update in {source_file.name}. Refreshing cache...")
-                     needs_refresh = True
-                     break
-             
-             if needs_refresh:
-                 self._run_etl(cpic_data_dir, cache_file)
-
         if not cache_file.exists():
-            # Check if auto-ETL is enabled
-            if config.auto_run_etl:
-                if cpic_data_dir.exists():
-                    print(f"CPIC cache not found. Running ETL from {cpic_data_dir}...")
-                    self._run_etl(cpic_data_dir, cache_file)
-                else:
-                    raise FileNotFoundError(
-                        f"CPIC cache file not found at {cache_file} and "
-                        f"CPIC data directory not found at {cpic_data_dir}. "
-                        "Please provide CPIC data files."
-                    )
-            else:
-                raise FileNotFoundError(
-                    f"CPIC cache file not found at {cache_file}. "
-                    "Please run cpic_etl.py to generate the cache, or enable auto_run_etl in config."
-                )
+            raise FileNotFoundError(
+                f"CPIC cache file not found at {cache_file}. "
+                "Please run cpic_etl.py locally to generate the cache."
+            )
 
         with open(cache_file, 'r') as f:
             self._data = json.load(f)
